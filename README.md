@@ -1,7 +1,7 @@
 # Photon Laser Tag Game
 
 <p align="center">
-   <img src="/assets/images/splash.jpg" width="100%" alt="Photon Logo">
+   <img src="/assets/images/logo.jpg" width="100%" alt="Photon Logo">
 </p>
 
 ## UDP based Python Project
