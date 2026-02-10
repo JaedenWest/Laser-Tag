@@ -30,5 +30,5 @@ $ python src/traffic_generator.py.
 | Anastasiia Tykina | [Anastassty](https://github.com/Anastassty) |
 | Brendan Murphy    | [brendanmurphy02-hue](https://github.com/brendanmurphy02-hue) |
 | Siraz Zaman       | [SirazSium84](https://github.com/SirazSium84) |
-| Nathan Lovette    | [NathanLovette](https://github.com/NathanLovette) |
+| Nathan Lovette    | [natemob1](https://github.com/natemob1) |
 
