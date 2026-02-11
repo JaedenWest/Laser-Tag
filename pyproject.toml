@@ -1,0 +1,10 @@
+[project]
+name = "photon-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pillow>=12.1.0",
+    "psycopg2-binary>=2.9.11",
+]
