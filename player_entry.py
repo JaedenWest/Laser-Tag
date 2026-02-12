@@ -46,6 +46,7 @@ class PlayerEntryScreen:
 
         self.parent.bind("<F5>", lambda e: self._start_game())
         self.parent.bind("<F12>", lambda e: self._clear_all())
+        self.parent.bind("<F1>", lambda e: self._show_add_player_dialog())
 
         if self.red_team_entries:
             self.red_team_entries[0]["id"].focus_set()
@@ -125,6 +126,12 @@ class PlayerEntryScreen:
         button_frame.grid(row=2, column=0, columnspan=2, pady=20)
 
         tk.Button(
+            button_frame, text="Add Player (F1)",
+            font=("Helvetica", 14, "bold"), bg="#007bff", fg="white",
+            padx=30, pady=10, command=self._show_add_player_dialog,
+        ).pack(side="left", padx=20)
+
+        tk.Button(
             button_frame, text="Start Game (F5)",
             font=("Helvetica", 14, "bold"), bg="#28a745", fg="white",
             padx=30, pady=10, command=self._start_game,
@@ -184,6 +191,108 @@ class PlayerEntryScreen:
 
         if self.red_team_entries:
             self.red_team_entries[0]["id"].focus_set()
+
+    def _show_add_player_dialog(self):
+        # Show a dialog to add a new player to the database.
+        dialog = tk.Toplevel(self.parent)
+        dialog.title("Add New Player")
+        dialog.geometry("400x250")
+        dialog.configure(bg="#1a1a2e")
+        dialog.resizable(False, False)
+
+        # Center dialog on parent window
+        dialog.transient(self.parent)
+        dialog.grab_set()
+
+        # Title
+        tk.Label(
+            dialog, text="Add New Player",
+            font=("Helvetica", 16, "bold"), fg="white", bg="#1a1a2e",
+        ).pack(pady=20)
+
+        # Player ID frame
+        id_frame = tk.Frame(dialog, bg="#1a1a2e")
+        id_frame.pack(padx=20, pady=10, fill="x")
+
+        tk.Label(
+            id_frame, text="Player ID:",
+            font=("Helvetica", 12), fg="white", bg="#1a1a2e",
+        ).pack(side="left", padx=(0, 10))
+
+        id_entry = tk.Entry(id_frame, width=20, font=("Helvetica", 12))
+        id_entry.pack(side="left", fill="x", expand=True)
+
+        # Codename frame
+        codename_frame = tk.Frame(dialog, bg="#1a1a2e")
+        codename_frame.pack(padx=20, pady=10, fill="x")
+
+        tk.Label(
+            codename_frame, text="Codename:",
+            font=("Helvetica", 12), fg="white", bg="#1a1a2e",
+        ).pack(side="left", padx=(0, 10))
+
+        codename_entry = tk.Entry(codename_frame, width=20, font=("Helvetica", 12))
+        codename_entry.pack(side="left", fill="x", expand=True)
+
+        # Button frame
+        button_frame = tk.Frame(dialog, bg="#1a1a2e")
+        button_frame.pack(pady=20)
+
+        def add_player():
+            player_id = id_entry.get().strip()
+            codename = codename_entry.get().strip()
+
+            if not player_id or not codename:
+                messagebox.showwarning("Input Error", "Please enter both Player ID and Codename", detail="Press Enter to dismiss.")
+                return
+
+            try:
+                player_id_int = int(player_id)
+            except ValueError:
+                messagebox.showerror("Input Error", "Player ID must be a number", detail="Press Enter to dismiss.")
+                return
+
+            # Attempt to add the player
+            success = add_new_player(player_id_int, codename)
+
+            if success:
+                messagebox.showinfo("Success", f"Player '{codename}' (ID: {player_id_int}) added successfully!", detail="Press Enter to dismiss.")
+                # Refresh codenames for any entries with this player ID
+                self._refresh_codenames_for_player(player_id_int)
+                dialog.destroy()
+            else:
+                messagebox.showerror("Error", "Failed to add player. The player ID may already exist.", detail="Press Enter to dismiss.")
+
+        tk.Button(
+            button_frame, text="Add Player (F1)",
+            font=("Helvetica", 12, "bold"), bg="#28a745", fg="white",
+            padx=30, pady=8, command=add_player,
+        ).pack(side="left", padx=10)
+
+        tk.Button(
+            button_frame, text="Cancel (Esc)",
+            font=("Helvetica", 12, "bold"), bg="#dc3545", fg="white",
+            padx=30, pady=8, command=dialog.destroy,
+        ).pack(side="left", padx=10)
+
+        # Key bindings
+        dialog.bind("<F1>", lambda e: add_player())
+        dialog.bind("<Escape>", lambda e: dialog.destroy())
+
+        # Focus on first field
+        id_entry.focus_set()
+
+    def _refresh_codenames_for_player(self, player_id):
+        # Update codename fields for any entries with the given player ID.
+        all_entries = self.red_team_entries + self.green_team_entries
+        for entries in all_entries:
+            entry_id = entries["id"].get().strip()
+            if entry_id:
+                try:
+                    if int(entry_id) == player_id:
+                        self._lookup_codename(entries)
+                except ValueError:
+                    pass
 
     def destroy(self):
         if self.frame:
