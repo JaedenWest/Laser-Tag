@@ -1,78 +1,206 @@
-from tkinter import *
-from tkinter import font
+#!/usr/bin/env python3
+"""
+player_entry.py - Player Entry Screen Component
 
-root = Tk()
+Operators enter player IDs and equipment IDs for Red and Green teams.
+Codenames are auto-looked up from the database.
+"""
 
-# Two lists of tuples of what was entered in StringVars
-red_team = [(StringVar(), StringVar()) for _ in range(20)]
-green_team = [(StringVar(), StringVar()) for _ in range(20)]
+import tkinter as tk
+from tkinter import messagebox
+from database import lookup_player_codename, add_new_player
 
-# Title
-label = Label(root, text="Edit Current Game", font=font.Font(weight=font.BOLD, size=18))
-label.grid(column=0, columnspan=2, row=0, pady=10)
 
-# Red team entry
-red_team_frame = Frame(root, background="red", borderwidth=1)
-red_team_frame.grid(column=0, row=1, padx=5)
-red_team_label = Label(red_team_frame, text="RED TEAM").grid(row=0)
+class PlayerEntryScreen:
+    MAX_PLAYERS_PER_TEAM = 15
 
-red_team_entry_frame = Frame(red_team_frame)
-red_team_entry_frame.grid(column=0, row=1)
+    def __init__(self, parent, start_game_callback):
+        self.parent = parent
+        self.start_game_callback = start_game_callback
+        self.frame = None
+        self.red_team_entries = []
+        self.green_team_entries = []
 
-for i in range(20):
-    Label(red_team_entry_frame, text=i).grid(column=0, row=i)
-    Entry(red_team_entry_frame, borderwidth=1, width=10, textvariable=red_team[i][0]).grid(column=1, row=i)
-    Entry(red_team_entry_frame, borderwidth=1, textvariable=red_team[i][1]).grid(column=2, row=i)
+    def show(self):
+        self.frame = tk.Frame(self.parent, bg="#1a1a2e")
+        self.frame.pack(fill="both", expand=True)
 
-# Green team entry
-green_team_frame = Frame(root, background="green", borderwidth=1)
-green_team_frame.grid(column=1, row=1, padx=5)
-green_team_label = Label(green_team_frame, text="GREEN TEAM").grid(row=0)
+        self.frame.grid_columnconfigure(0, weight=1)
+        self.frame.grid_columnconfigure(1, weight=1)
+        self.frame.grid_rowconfigure(1, weight=1)
 
-green_team_entry_frame = Frame(green_team_frame)
-green_team_entry_frame.grid(row=1)
+        tk.Label(
+            self.frame, text="PHOTON LASER TAG - PLAYER ENTRY",
+            font=("Helvetica", 24, "bold"), fg="white", bg="#1a1a2e",
+        ).grid(row=0, column=0, columnspan=2, pady=20)
 
-for i in range(20):
-    Label(green_team_entry_frame, text=i).grid(column=0, row=i)
-    Entry(green_team_entry_frame, borderwidth=1, width=10, textvariable=green_team[i][0]).grid(column=1, row=i)
-    Entry(green_team_entry_frame, borderwidth=1, textvariable=green_team[i][1]).grid(column=2, row=i)
+        self._create_team_frame("RED TEAM", 0, self.red_team_entries, "#ff4444")
+        self._create_team_frame("GREEN TEAM", 1, self.green_team_entries, "#44ff44")
+        self._create_button_frame()
 
-# # Game mode
-# game_mode_label = Label(root, text="Game Mode: Standard public mode").grid(columnspan=2, row=2)
+        tk.Label(
+            self.frame,
+            text="Press F5 or click 'Start Game' to begin  |  Press F12 or click 'Clear All' to reset",
+            font=("Helvetica", 10), fg="gray", bg="#1a1a2e",
+        ).grid(row=3, column=0, columnspan=2, pady=10)
 
-# Controls
-controls_frame = Frame(root)
-controls_frame.grid(columnspan=2, row=3, pady=5)
-controls = ["F3\nStart\nGame", "F12\nClear\nGame"]
-for index, value in enumerate(controls):
-    if value:
-        Label(controls_frame,
-              text=value,
-              relief="ridge",
-              borderwidth=1,
-              padx=10,
-              anchor="center").grid(row=0, column=index)
+        self.parent.bind("<F5>", lambda e: self._start_game())
+        self.parent.bind("<F12>", lambda e: self._clear_all())
 
-# Data and controls
-def play(_):
-    print("Red Team")
-    for player in red_team:
-        print(player[0].get(), player[1].get())
-    
-    print("\nGreen Team")
-    for player in green_team:
-        print(player[0].get(), player[1].get())
+        if self.red_team_entries:
+            self.red_team_entries[0]["id"].focus_set()
 
-def clear(_):
-    for player in red_team:
-        player[0].set("")
-        player[1].set("")
-    
-    for player in green_team:
-        player[0].set("")
-        player[1].set("")
+    def _create_team_frame(self, team_name, column, entries_list, color):
+        team_frame = tk.Frame(self.frame, bg="#1a1a2e")
+        team_frame.grid(row=1, column=column, padx=20, pady=10, sticky="n")
 
-root.bind("<F3>", play)
-root.bind("<F12>", clear)
+        tk.Label(
+            team_frame, text=team_name,
+            font=("Helvetica", 18, "bold"), fg=color, bg="#1a1a2e",
+        ).grid(row=0, column=0, columnspan=3, pady=(0, 10))
 
-root.mainloop()
+        for i, text in enumerate(["Player ID", "Codename", "Equipment ID"]):
+            tk.Label(
+                team_frame, text=text,
+                font=("Helvetica", 10, "bold"), fg="white", bg="#1a1a2e",
+            ).grid(row=1, column=i, padx=5, pady=2)
+
+        for row in range(self.MAX_PLAYERS_PER_TEAM):
+            entries_list.append(self._create_player_row(team_frame, row + 2))
+
+    def _create_player_row(self, parent_frame, grid_row):
+        entries = {}
+
+        id_entry = tk.Entry(parent_frame, width=10, justify="center")
+        id_entry.grid(row=grid_row, column=0, padx=2, pady=2)
+        entries["id"] = id_entry
+
+        codename_entry = tk.Entry(parent_frame, width=15, justify="center")
+        codename_entry.grid(row=grid_row, column=1, padx=2, pady=2)
+        codename_entry.config(state="readonly")
+        entries["codename"] = codename_entry
+
+        equipment_entry = tk.Entry(parent_frame, width=10, justify="center")
+        equipment_entry.grid(row=grid_row, column=2, padx=2, pady=2)
+        entries["equipment"] = equipment_entry
+
+        # Multiple events to trigger codename lookup (macOS <FocusOut> can be unreliable)
+        id_entry.bind("<Return>", lambda e, ent=entries: self._schedule_lookup(ent))
+        id_entry.bind("<Tab>", lambda e, ent=entries: self._schedule_lookup(ent))
+        id_entry.bind("<FocusOut>", lambda e, ent=entries: self._schedule_lookup(ent))
+        codename_entry.bind("<Button-1>", lambda e, ent=entries: self._schedule_lookup(ent))
+        equipment_entry.bind("<FocusIn>", lambda e, ent=entries: self._schedule_lookup(ent))
+
+        return entries
+
+    def _schedule_lookup(self, entries):
+        self.parent.after(50, lambda: self._lookup_codename(entries))
+
+    def _lookup_codename(self, entries):
+        player_id = entries["id"].get().strip()
+
+        if not player_id:
+            entries["codename"].config(state="normal")
+            entries["codename"].delete(0, tk.END)
+            entries["codename"].config(state="readonly")
+            return
+
+        try:
+            player_id_int = int(player_id)
+            codename = lookup_player_codename(player_id_int)
+
+            entries["codename"].config(state="normal")
+            entries["codename"].delete(0, tk.END)
+            entries["codename"].insert(0, codename if codename else "[Not Found]")
+            entries["codename"].config(state="readonly")
+
+        except ValueError:
+            entries["codename"].config(state="normal")
+            entries["codename"].delete(0, tk.END)
+            entries["codename"].insert(0, "[Invalid ID]")
+            entries["codename"].config(state="readonly")
+
+    def _create_button_frame(self):
+        button_frame = tk.Frame(self.frame, bg="#1a1a2e")
+        button_frame.grid(row=2, column=0, columnspan=2, pady=20)
+
+        tk.Button(
+            button_frame, text="Start Game (F5)",
+            font=("Helvetica", 14, "bold"), bg="#28a745", fg="white",
+            padx=30, pady=10, command=self._start_game,
+        ).pack(side="left", padx=20)
+
+        tk.Button(
+            button_frame, text="Clear All (F12)",
+            font=("Helvetica", 14, "bold"), bg="#dc3545", fg="white",
+            padx=30, pady=10, command=self._clear_all,
+        ).pack(side="left", padx=20)
+
+    def _start_game(self):
+        red_players = self._collect_team_data(self.red_team_entries)
+        green_players = self._collect_team_data(self.green_team_entries)
+
+        if not red_players:
+            messagebox.showwarning("Warning", "Red team needs at least one player!")
+            return
+        if not green_players:
+            messagebox.showwarning("Warning", "Green team needs at least one player!")
+            return
+
+        self.parent.unbind("<F5>")
+        self.parent.unbind("<F12>")
+        self.frame.destroy()
+
+        if self.start_game_callback:
+            self.start_game_callback(red_players, green_players)
+
+    def _collect_team_data(self, entries_list):
+        players = []
+        for entries in entries_list:
+            player_id = entries["id"].get().strip()
+            equipment_id = entries["equipment"].get().strip()
+
+            if player_id and equipment_id:
+                entries["codename"].config(state="normal")
+                codename = entries["codename"].get().strip()
+                entries["codename"].config(state="readonly")
+
+                players.append({
+                    "id": player_id,
+                    "codename": codename
+                    if codename and codename not in ["[Not Found]", "[Invalid ID]"]
+                    else f"Player {player_id}",
+                    "equipment": equipment_id,
+                })
+        return players
+
+    def _clear_all(self):
+        for entries in self.red_team_entries + self.green_team_entries:
+            entries["id"].delete(0, tk.END)
+            entries["codename"].config(state="normal")
+            entries["codename"].delete(0, tk.END)
+            entries["codename"].config(state="readonly")
+            entries["equipment"].delete(0, tk.END)
+
+        if self.red_team_entries:
+            self.red_team_entries[0]["id"].focus_set()
+
+    def destroy(self):
+        if self.frame:
+            self.frame.destroy()
+
+
+if __name__ == "__main__":
+    def on_start_game(red_players, green_players):
+        print(f"Red team:   {red_players}")
+        print(f"Green team: {green_players}")
+        root.destroy()
+
+    root = tk.Tk()
+    root.title("Player Entry Test")
+    root.geometry("1024x768")
+    root.configure(bg="#1a1a2e")
+
+    screen = PlayerEntryScreen(root, on_start_game)
+    screen.show()
+    root.mainloop()
