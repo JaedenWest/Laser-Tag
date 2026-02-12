@@ -1,7 +1,23 @@
 [project]
 name = "lasertag"
 version = "0.1.0"
-description = "Add your description here"
+description = "Laser Tag game project"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+    "pillow >= 12.1.0",
+    "psycopg2-binary>=2.9.11"
+]
+
+[commands.pre-install]
+#run before installing python packages
+shell= [
+    "sudo apt update",
+    "sudo apt install -y python3 python3-venv python3-pip python3-tk libpq-dev build-essential python3-dev libjpeg-dev zlib1g-dev"
+]
+
+[commands.post-install]
+#run after everything is installed
+shell = [
+    "echo 'Installation is complete you can run game.py to start the game.'"
+]
