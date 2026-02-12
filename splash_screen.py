@@ -22,7 +22,7 @@ class SplashScreen:
         self.frame = tk.Frame(self.parent, bg="black")
         self.frame.pack(fill="both", expand=True)
 
-        logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.jpg")
+        logo_path = os.path.join(os.path.dirname(__file__), "assets", "images", "logo.jpg")
 
         try:
             image = Image.open(logo_path)
