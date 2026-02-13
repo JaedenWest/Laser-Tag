@@ -75,6 +75,11 @@ def stop() -> None:
             pass
         _send_sock = None
 
+def get_broadcast_address() -> str:
+    """Return the current UDP broadcast address."""
+    return _broadcast_address
+
+
 def set_broadcast_address(address: str) -> None:
     """
     Update the network address used for UDP broadcasts.
