@@ -9,6 +9,7 @@ Codenames are auto-looked up from the database.
 import tkinter as tk
 from tkinter import messagebox
 from database import lookup_player_codename, add_new_player
+from udp.udp_service import send_equipment_id
 
 
 class PlayerEntryScreen:
@@ -91,6 +92,8 @@ class PlayerEntryScreen:
         id_entry.bind("<FocusOut>", lambda e, ent=entries: self._schedule_lookup(ent))
         codename_entry.bind("<Button-1>", lambda e, ent=entries: self._schedule_lookup(ent))
         equipment_entry.bind("<FocusIn>", lambda e, ent=entries: self._schedule_lookup(ent))
+        equipment_entry.bind("<Return>", lambda e, ent=entries: self._broadcast_equipment(ent))
+
 
         return entries
 
@@ -191,6 +194,20 @@ class PlayerEntryScreen:
 
         if self.red_team_entries:
             self.red_team_entries[0]["id"].focus_set()
+
+    def _broadcast_equipment(self, entries):
+        player_id = entries["id"].get().strip()
+        if not player_id:
+            return
+        equipment_id = entries["equipment"].get().strip()
+        if not equipment_id:
+            return
+        try:
+            send_equipment_id(int(equipment_id))
+        except ValueError:
+            messagebox.showerror("Input Error", "Equipment ID must be a number", detail="Press Enter to dismiss.")
+        except OSError as ex:
+            messagebox.showwarning("UDP Warning", f"Failed to broadcast equipment ID: {ex}", detail="Press Enter to dismiss.")
 
     def _show_add_player_dialog(self):
         # Show a dialog to add a new player to the database.

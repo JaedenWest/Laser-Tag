@@ -55,6 +55,7 @@ def delete_all_players():
         with conn.cursor() as cursor:
             cursor.execute("DELETE FROM players;")
 
+
 def show_all_players():
     with psycopg2.connect(**connection_parameters) as conn:
         with conn.cursor() as cursor:
