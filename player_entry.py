@@ -9,7 +9,7 @@ Codenames are auto-looked up from the database.
 import tkinter as tk
 from tkinter import messagebox
 from database import lookup_player_codename, add_new_player
-from udp.udp_service import send_equipment_id
+from udp.udp_service import send_equipment_id, set_broadcast_address, get_broadcast_address
 
 
 class PlayerEntryScreen:
@@ -21,6 +21,7 @@ class PlayerEntryScreen:
         self.frame = None
         self.red_team_entries = []
         self.green_team_entries = []
+        self.udp_addr_entry = None
 
     def show(self):
         self.frame = tk.Frame(self.parent, bg="#1a1a2e")
@@ -146,6 +147,26 @@ class PlayerEntryScreen:
             padx=30, pady=10, command=self._clear_all,
         ).pack(side="left", padx=20)
 
+        # UDP address row (Sprint 2 requirement: configurable network)
+        udp_frame = tk.Frame(button_frame, bg="#1a1a2e")
+        udp_frame.pack(side="left", padx=20)
+
+        tk.Label(
+            udp_frame, text="UDP Address:",
+            font=("Helvetica", 12, "bold"), fg="white", bg="#2e2b1a",
+        ).pack(side="left", padx=(0, 8))
+
+        self.udp_addr_entry = tk.Entry(udp_frame, width=16, justify="center")
+        self.udp_addr_entry.pack(side="left")
+        self.udp_addr_entry.insert(0, get_broadcast_address())
+
+        tk.Button(
+            udp_frame, text="Set UDP",
+            font=("Helvetica", 12, "bold"), bg="#fcdc3b", fg="white",
+            padx=14, pady=6, command=self._apply_udp_address,
+        ).pack(side="left", padx=(10, 0))
+
+
     def _start_game(self):
         red_players = self._collect_team_data(self.red_team_entries)
         green_players = self._collect_team_data(self.green_team_entries)
@@ -208,6 +229,38 @@ class PlayerEntryScreen:
             messagebox.showerror("Input Error", "Equipment ID must be a number", detail="Press Enter to dismiss.")
         except OSError as ex:
             messagebox.showwarning("UDP Warning", f"Failed to broadcast equipment ID: {ex}", detail="Press Enter to dismiss.")
+
+    def _apply_udp_address(self):
+        if self.udp_addr_entry is None:
+            return
+
+        address = self.udp_addr_entry.get().strip()
+        if not address:
+            messagebox.showwarning("Input Error", "Please enter a UDP address.", detail="Press Enter to dismiss.")
+            return
+
+        # Basic “looks like an IP/hostname” check (not strict, but prevents empty/space)
+        if " " in address:
+            messagebox.showwarning("Input Error", "UDP address cannot contain spaces.", detail="Press Enter to dismiss.")
+        return
+
+        set_broadcast_address(address)
+        messagebox.showinfo("UDP", f"UDP broadcast address set to: {address}", detail="Press Enter to dismiss.")
+
+    def _apply_udp_address(self):
+        if self.udp_addr_entry is None:
+            return
+        
+        address = self.udp_addr_entry.get().strip()
+        if not address:
+            messagebox.showwarning("Input Error", "Please enter a UDP address.", detail="Press Enter to dismiss.")
+            return
+        if " " in address:
+            messagebox.showwarning("Input Error", "UDP address cannot contain spaces.", detail="Press Enter to dismiss.")
+            return
+        
+        set_broadcast_address(address)
+        messagebox.showinfo("UDP", f"UDP broadcast address set to: {address}", detail="Press Enter to dismiss.")
 
     def _show_add_player_dialog(self):
         # Show a dialog to add a new player to the database.
