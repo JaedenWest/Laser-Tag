@@ -99,7 +99,7 @@ class PlayerEntryScreen:
         return entries
 
     def _schedule_lookup(self, entries):
-        self.parent.after(50, lambda: self._lookup_codename(entries))
+        self.parent.after(50, lambda: self._apply_player_rules(entries))
 
     def _lookup_codename(self, entries):
         player_id = entries["id"].get().strip()
@@ -124,6 +124,55 @@ class PlayerEntryScreen:
             entries["codename"].delete(0, tk.END)
             entries["codename"].insert(0, "[Invalid ID]")
             entries["codename"].config(state="readonly")
+
+    def _apply_player_rules(self, entries):
+        text = entries["id"].get().strip()
+        if not text:
+            self._lookup_codename(entries)
+            return
+
+        try:
+            player_id = int(text)
+        except ValueError:
+            self._lookup_codename(entries)
+            return
+
+        # duplicate check
+        for row in self.red_team_entries + self.green_team_entries:
+            if row is entries:
+                continue
+            other = row["id"].get().strip()
+            if other and other.isdigit() and int(other) == player_id:
+                messagebox.showwarning("Duplicate Player", f"Player ID {player_id} already exists.")
+                self._clear_row(entries)
+                return
+
+        # odd/even rule
+        should_be_green = (player_id % 2 == 0)
+        typed_green = entries in self.green_team_entries
+
+        if should_be_green != typed_green:
+            correct_team = self.green_team_entries if should_be_green else self.red_team_entries
+
+            target = None
+            for row in correct_team:
+                if not row["id"].get().strip():
+                    target = row
+                    break
+
+            if not target:
+                messagebox.showwarning("Team Full", "No space on correct team.")
+                self._clear_row(entries)
+                return
+
+            target["id"].insert(0, str(player_id))
+            self._clear_row(entries)
+
+            self._lookup_codename(target)
+            target["equipment"].focus_set()
+            return
+
+        self._lookup_codename(entries)
 
     def _create_button_frame(self):
         button_frame = tk.Frame(self.frame, bg="#1a1a2e")
@@ -215,6 +264,13 @@ class PlayerEntryScreen:
 
         if self.red_team_entries:
             self.red_team_entries[0]["id"].focus_set()
+
+    def _clear_row(self, entries):
+        entries["id"].delete(0, tk.END)
+        entries["equipment"].delete(0, tk.END)
+        entries["codename"].config(state="normal")
+        entries["codename"].delete(0, tk.END)
+        entries["codename"].config(state="readonly")
 
     def _broadcast_equipment(self, entries):
         player_id = entries["id"].get().strip()
