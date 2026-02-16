@@ -20,7 +20,8 @@ This project is a team project that will run a laser tag game, it will run with 
 * Then type cd Laser-Tag
 * Then sudo apt update
 * Then sudo apt install -y python3 python3-venv python3-pip build-essential libpq-dev
-* Then uv install for all dependencies
+* Then chmod +x install.sh
+* Then ./install.sh for all dependencies
 * Lastly you can run the project by typing python3 main.py
 ## Running a Traffic Generator
 
