@@ -13,6 +13,7 @@ This project is a team project that will run a laser tag game, it will run with 
 * Create a screen for game progress
 * Use UDP SOCKETS to broadcast and receive equipment codes for each player
 * Link the database to the application for communication
+* Even equipment numbers are green and odd equipment numbers are red
 * Run the game
 
 ## How to install this game and run it on a machine
@@ -20,12 +21,10 @@ This project is a team project that will run a laser tag game, it will run with 
 * Then type cd Laser-Tag
 * Then sudo apt update
 * Then sudo apt install -y python3 python3-venv python3-pip build-essential libpq-dev
-* Then uv install for all dependencies
+* Then chmod +x install.sh
+* Then ./install.sh for all dependencies
 * Lastly you can run the project by typing python3 main.py
-## Running a Traffic Generator
 
-In the tools directory is a file named traffic_generator.py. This file generates UDP traffic so that you can simulate the game without the hardware. To run use this command
-$ python src/traffic_generator.py.
 
 ## Contributors
 
