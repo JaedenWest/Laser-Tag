@@ -93,13 +93,15 @@ class PlayerEntryScreen:
         id_entry.bind("<FocusOut>", lambda e, ent=entries: self._schedule_lookup(ent))
         codename_entry.bind("<Button-1>", lambda e, ent=entries: self._schedule_lookup(ent))
         equipment_entry.bind("<FocusIn>", lambda e, ent=entries: self._schedule_lookup(ent))
-        equipment_entry.bind("<Return>", lambda e, ent=entries: self._broadcast_equipment(ent))
+        equipment_entry.bind("<Return>", lambda e, ent=entries: self._finalize_player(ent))
+
 
 
         return entries
 
     def _schedule_lookup(self, entries):
-        self.parent.after(50, lambda: self._apply_player_rules(entries))
+        self.parent.after(50, lambda: self._lookup_codename(entries))
+
 
     def _lookup_codename(self, entries):
         player_id = entries["id"].get().strip()
@@ -173,6 +175,96 @@ class PlayerEntryScreen:
             return
 
         self._lookup_codename(entries)
+
+    def _apply_equipment_rules(self, entries) -> bool:
+        """
+        Enforce:
+        - equipment_id must be unique across both teams
+        - odd/even team assignment is based on equipment_id
+          (even -> green, odd -> red)
+        Returns True if the row is valid and can stay, False if it was cleared/moved.
+        """
+
+        player_text = entries["id"].get().strip()
+        equip_text = entries["equipment"].get().strip()
+
+        # Must have both values before we can apply rules
+        if not player_text or not equip_text:
+            return False
+
+        if not player_text.isdigit():
+            messagebox.showwarning("Input Error", "Player ID must be a number.")
+            self._clear_row(entries)
+            return False
+
+        if not equip_text.isdigit():
+            messagebox.showwarning("Input Error", "Equipment ID must be a number.")
+            self._clear_row(entries)
+            return False
+
+        player_id = int(player_text)
+        equipment_id = int(equip_text)
+
+        # 1) Duplicate check by EQUIPMENT ID across both teams
+        for row in self.red_team_entries + self.green_team_entries:
+            if row is entries:
+                continue
+            other_eq = row["equipment"].get().strip()
+            if other_eq and other_eq.isdigit() and int(other_eq) == equipment_id:
+                messagebox.showwarning(
+                    "Duplicate Equipment",
+                    f"Equipment ID {equipment_id} already exists."
+                )
+                self._clear_row(entries)
+                return False
+        # (Optional but smart) Duplicate check by PLAYER ID too
+        for row in self.red_team_entries + self.green_team_entries:
+            if row is entries:
+                continue
+            other_id = row["id"].get().strip()
+            if other_id and other_id.isdigit() and int(other_id) == player_id:
+                messagebox.showwarning(
+                    "Duplicate Player",
+                    f"Player ID {player_id} already exists."
+                )
+                self._clear_row(entries)
+                return False
+
+        # 2) Odd/even rule based on EQUIPMENT ID
+        should_be_green = (equipment_id % 2 == 0)
+        typed_green = entries in self.green_team_entries
+
+        if should_be_green != typed_green:
+            correct_team = self.green_team_entries if should_be_green else self.red_team_entries
+
+            target = None
+            for row in correct_team:
+                # choose an empty row on the correct team
+                if not row["id"].get().strip() and not row["equipment"].get().strip():
+                    target = row
+                    break
+            if not target:
+                messagebox.showwarning("Team Full", "No space on correct team.")
+                self._clear_row(entries)
+                return False
+
+            # Move BOTH fields into the correct row
+            target["id"].insert(0, str(player_id))
+            target["equipment"].insert(0, str(equipment_id))
+
+            # Clear the old row
+            self._clear_row(entries)
+            # Refresh codename in the new row
+            self._lookup_codename(target)
+
+            # focus next field (optional)
+            target["equipment"].focus_set()
+            return False  # original row no longer valid; data moved
+
+        # If it stayed on same team, just ensure codename is correct
+        self._lookup_codename(entries)
+        return True
+
 
     def _create_button_frame(self):
         button_frame = tk.Frame(self.frame, bg="#1a1a2e")
@@ -294,23 +386,6 @@ class PlayerEntryScreen:
     def _apply_udp_address(self):
         if self.udp_addr_entry is None:
             return
-
-        address = self.udp_addr_entry.get().strip()
-        if not address:
-            messagebox.showwarning("Input Error", "Please enter a UDP address.", detail="Press Enter to dismiss.")
-            return
-
-        # Basic “looks like an IP/hostname” check (not strict, but prevents empty/space)
-        if " " in address:
-            messagebox.showwarning("Input Error", "UDP address cannot contain spaces.", detail="Press Enter to dismiss.")
-        return
-
-        set_broadcast_address(address)
-        messagebox.showinfo("UDP", f"UDP broadcast address set to: {address}", detail="Press Enter to dismiss.")
-
-    def _apply_udp_address(self):
-        if self.udp_addr_entry is None:
-            return
         
         address = self.udp_addr_entry.get().strip()
         if not address:
@@ -424,6 +499,14 @@ class PlayerEntryScreen:
                         self._lookup_codename(entries)
                 except ValueError:
                     pass
+
+    def _finalize_player(self, entries):
+        # 1) apply team/duplicate rules using equipment id
+        if not self._apply_equipment_rules(entries):
+            return
+        # 2) broadcast equipment id
+        self._broadcast_equipment(entries)
+
 
     def destroy(self):
         if self.frame:
