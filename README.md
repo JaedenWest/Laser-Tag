@@ -13,6 +13,7 @@ This project is a team project that will run a laser tag game, it will run with 
 * Create a screen for game progress
 * Use UDP SOCKETS to broadcast and receive equipment codes for each player
 * Link the database to the application for communication
+* Even equipment numbers are green and odd equipment numbers are red
 * Run the game
 
 ## How to install this game and run it on a machine
