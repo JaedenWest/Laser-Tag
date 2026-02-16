@@ -92,9 +92,11 @@ class PlayerEntryScreen:
         id_entry.bind("<Tab>", lambda e, ent=entries: self._schedule_lookup(ent))
         id_entry.bind("<FocusOut>", lambda e, ent=entries: self._schedule_lookup(ent))
         codename_entry.bind("<Button-1>", lambda e, ent=entries: self._schedule_lookup(ent))
+        
         equipment_entry.bind("<FocusIn>", lambda e, ent=entries: self._schedule_lookup(ent))
         equipment_entry.bind("<Return>", lambda e, ent=entries: self._broadcast_equipment(ent))
-
+        # New binding: Validate team based on Equipment ID when leaving the field
+        equipment_entry.bind("<FocusOut>", lambda e, ent=entries: self._validate_equipment(ent))
 
         return entries
 
@@ -126,6 +128,8 @@ class PlayerEntryScreen:
             entries["codename"].config(state="readonly")
 
     def _apply_player_rules(self, entries):
+        # Only checks for duplicates and looks up codename.
+        # Team assignment logic has moved to _validate_equipment (based on Equipment ID).
         text = entries["id"].get().strip()
         if not text:
             self._lookup_codename(entries)
@@ -147,8 +151,22 @@ class PlayerEntryScreen:
                 self._clear_row(entries)
                 return
 
+        self._lookup_codename(entries)
+
+    def _validate_equipment(self, entries):
         # odd/even rule
-        should_be_green = (player_id % 2 == 0)
+        equipment_text = entries["equipment"].get().strip()
+        player_id_text = entries["id"].get().strip()
+        
+        if not equipment_text:
+            return
+
+        try:
+            equipment_id = int(equipment_text)
+        except ValueError:
+            return # Let broadcast or validation elsewhere handle non-integers
+
+        should_be_green = (equipment_id % 2 == 0)
         typed_green = entries in self.green_team_entries
 
         if should_be_green != typed_green:
@@ -156,23 +174,24 @@ class PlayerEntryScreen:
 
             target = None
             for row in correct_team:
-                if not row["id"].get().strip():
+                # Find first empty row in the correct team
+                if not row["id"].get().strip() and not row["equipment"].get().strip():
                     target = row
                     break
 
             if not target:
-                messagebox.showwarning("Team Full", "No space on correct team.")
+                messagebox.showwarning("Team Full", "No space on correct team for this equipment ID.")
                 self._clear_row(entries)
                 return
 
-            target["id"].insert(0, str(player_id))
-            self._clear_row(entries)
-
+            # Move Player ID
+            if player_id_text:
+                target["id"].insert(0, player_id_text)
+            
+            target["equipment"].insert(0, str(equipment_id))
             self._lookup_codename(target)
+            self._clear_row(entries)
             target["equipment"].focus_set()
-            return
-
-        self._lookup_codename(entries)
 
     def _create_button_frame(self):
         button_frame = tk.Frame(self.frame, bg="#1a1a2e")
