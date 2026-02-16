@@ -24,9 +24,11 @@ class SplashScreen:
 
         logo_path = os.path.join(os.path.dirname(__file__), "assets", "images", "logo.jpg")
 
+        self.parent.update_idletasks() # Update idle tasks before querying window size
+        
         try:
             image = Image.open(logo_path)
-            image.thumbnail((400, 300), Image.Resampling.LANCZOS)
+            image = image.resize((self.parent.winfo_width(), self.parent.winfo_height()), Image.Resampling.LANCZOS)
             self.photo = ImageTk.PhotoImage(image)
 
             logo_label = tk.Label(self.frame, image=self.photo, bg="black")
