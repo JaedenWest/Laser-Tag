@@ -226,6 +226,11 @@ class PlayerEntryScreen:
         if not green_players:
             messagebox.showwarning("Warning", "Green team needs at least one player!")
             return
+        
+        for player in red_players + green_players:
+            if not player['codename']:
+                messagebox.showwarning("Warning", "At least one player is missing a codename.")
+                return
 
         self.parent.unbind("<F5>")
         self.parent.unbind("<F12>")
@@ -249,7 +254,7 @@ class PlayerEntryScreen:
                     "id": player_id,
                     "codename": codename
                     if codename and codename not in ["[Not Found]", "[Invalid ID]"]
-                    else f"Player {player_id}",
+                    else "",
                     "equipment": equipment_id,
                 })
         return players
