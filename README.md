@@ -16,15 +16,15 @@ This project is a team project that will run a laser tag game, it will run with 
 * Run the game
 
 ## How to install this game and run it on a machine
-In the terminal type git clone https://github.com/JaedenWest/Laser-Tag.git
-Then run cd Laser-Tag
-Then sudo apt update
-Then run sudo apt install -y python3 python3-venv python3-pip build-essential libpq-dev
-Then uv install for all dependencies
-Lastly you can run the project by typing python3 main.py
+* In the terminal type git clone https://github.com/JaedenWest/Laser-Tag.git
+* Then run cd Laser-Tag
+* Then sudo apt update
+* Then run sudo apt install -y python3 python3-venv python3-pip build-essential libpq-dev
+* Then uv install for all dependencies
+* Lastly you can run the project by typing python3 main.py
 ## Running a Traffic Generator
 
-In the ___ directory is a file named traffic_generator.py. This file generates UDP traffic so that you can simulate the game without the hardware. To run use this command
+In the tools directory is a file named traffic_generator.py. This file generates UDP traffic so that you can simulate the game without the hardware. To run use this command
 $ python src/traffic_generator.py.
 
 ## Contributors
