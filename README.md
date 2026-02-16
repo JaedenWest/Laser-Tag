@@ -22,11 +22,9 @@ This project is a team project that will run a laser tag game, it will run with 
 * Then source ~/.bashrc
 * Then uv venv
 * source .venv/bin/activate
-* Then sudo apt update
-* Then sudo apt install -y python3 python3-venv python3-pip build-essential libpq-dev python3-tk
-* uv pip install pillow
 * Then chmod +x install.sh
 * Then ./install.sh for all dependencies
+* uv pip install pillow
 * Lastly you can run the project by typing python3 main.py
 
 
