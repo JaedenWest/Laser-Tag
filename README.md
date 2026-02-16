@@ -23,10 +23,7 @@ This project is a team project that will run a laser tag game, it will run with 
 * Then chmod +x install.sh
 * Then ./install.sh for all dependencies
 * Lastly you can run the project by typing python3 main.py
-## Running a Traffic Generator
 
-In the tools directory is a file named traffic_generator.py. This file generates UDP traffic so that you can simulate the game without the hardware. To run use this command
-$ python src/traffic_generator.py.
 
 ## Contributors
 
