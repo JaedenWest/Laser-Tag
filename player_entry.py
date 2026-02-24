@@ -100,7 +100,7 @@ class PlayerEntryScreen:
         return entries
 
     def _schedule_lookup(self, entries):
-        self.parent.after(50, lambda: self._lookup_codename(entries))
+        self.parent.after(50, lambda: self._apply_player_rules(entries))
 
 
     def _lookup_codename(self, entries):

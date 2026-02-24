@@ -14,13 +14,13 @@ except ImportError:
 
 connection_parameters = {
     "dbname": "photon",
-    "user": "student",
-    "password": "student",
-    "host": "localhost",
-    "port": "5432",
+    #"user": "student",
+    #"password": "student",
+    #"host": "localhost",
+    #"port": "5432",
 }
 
-_STUB_PLAYERS = {1: "Opus"}
+_STUB_PLAYERS = {1: "STUB_PLAYER"}
 _DB_AVAILABLE_CACHE = None
 
 
@@ -97,9 +97,7 @@ def lookup_player_codename(player_id):
     except psycopg2.Error:
         return None
 
-
 def add_new_player(player_id, codename):
-    """Add a new player. Returns True on success, False on failure."""
     if not _db_available():
         _STUB_PLAYERS[player_id] = codename
         return True
@@ -107,9 +105,8 @@ def add_new_player(player_id, codename):
     try:
         add_player(player_id, codename)
         return True
-    except psycopg2.Error:
+    except psycopg2.Error as e:
         return False
-
 
 if __name__ == "__main__":
     print("=== Database Connection Test ===\n")
