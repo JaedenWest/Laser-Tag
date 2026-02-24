@@ -17,15 +17,16 @@ This project is a team project that will run a laser tag game, it will run with 
 * Run the game
 
 ## How to install this game and run it on a machine
-* In the terminal type git clone https://github.com/JaedenWest/Laser-Tag.git
-* Then type cd Laser-Tag
-* Then source ~/.bashrc
-* Then uv venv
+Run the following commands in the terminal:
+* git clone https://github.com/JaedenWest/Laser-Tag.git
+* cd Laser-Tag
+* curl -Ls https://astral.sh/uv/install.sh | sh
+* source ~/.bashrc
+* uv venv
 * source .venv/bin/activate
-* Then chmod +x install.sh
-* Then ./install.sh for all dependencies
-* uv pip install pillow
-* Lastly you can run the project by typing python3 main.py
+* chmod +x install.sh
+* ./install.sh
+* python main.py
 
 
 ## Contributors
