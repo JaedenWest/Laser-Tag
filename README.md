@@ -20,7 +20,7 @@ This project is a team project that will run a laser tag game, it will run with 
 Run the following commands in the terminal:
 * git clone https://github.com/JaedenWest/Laser-Tag.git
 * cd Laser-Tag
-* curl -Ls https://astral.sh/uv/install.sh | sh
+* curl -LsSf https://astral.sh/uv/install.sh | sh
 * source ~/.bashrc
 * uv venv
 * source .venv/bin/activate
