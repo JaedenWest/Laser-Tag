@@ -22,6 +22,7 @@ class PlayerEntryScreen:
         self.red_team_entries = []
         self.green_team_entries = []
         self.udp_addr_entry = None
+        self.equipment_debounce_ms = 600 #delay to start broadcasting. can tweak.
 
     def show(self):
         self.frame = tk.Frame(self.parent, bg="#1a1a2e")
@@ -83,9 +84,20 @@ class PlayerEntryScreen:
         codename_entry.config(state="readonly")
         entries["codename"] = codename_entry
 
-        equipment_entry = tk.Entry(parent_frame, width=10, justify="center")
+        equipment_var = tk.StringVar()
+
+        equipment_entry = tk.Entry(
+            parent_frame,
+            width=10,
+            justify="center",
+            textvariable=equipment_var
+        )
+
         equipment_entry.grid(row=grid_row, column=2, padx=2, pady=2)
+
         entries["equipment"] = equipment_entry
+        entries["equipment_var"] = equipment_var
+        entries["equip_job"] = None
 
         # Multiple events to trigger codename lookup (macOS <FocusOut> can be unreliable)
         id_entry.bind("<Return>", lambda e, ent=entries: self._schedule_lookup(ent))
@@ -94,7 +106,8 @@ class PlayerEntryScreen:
         codename_entry.bind("<Button-1>", lambda e, ent=entries: self._schedule_lookup(ent))
         equipment_entry.bind("<FocusIn>", lambda e, ent=entries: self._schedule_lookup(ent))
         equipment_entry.bind("<Return>", lambda e, ent=entries: self._finalize_player(ent))
-
+        
+        equipment_var.trace_add("write", lambda *args, ent=entries: self._schedule_finalize(ent))
 
 
         return entries
@@ -368,6 +381,9 @@ class PlayerEntryScreen:
         entries["codename"].config(state="normal")
         entries["codename"].delete(0, tk.END)
         entries["codename"].config(state="readonly")
+        job = entries.get("equip_job")
+        if job:
+            self.parent.after_cancel(job)
 
     def _broadcast_equipment(self, entries):
         player_id = entries["id"].get().strip()
@@ -499,6 +515,25 @@ class PlayerEntryScreen:
                         self._lookup_codename(entries)
                 except ValueError:
                     pass
+
+    def _schedule_finalize(self, entries):
+        """
+        Debounce finalize: wait briefly after user stops typing equipment ID,
+        then enforce rules + broadcast.
+        """
+        # cancel any previously scheduled finalize for this row
+        job = entries.get("equip_job")
+        if job is not None:
+            try:
+                self.parent.after_cancel(job)
+            except Exception:
+                pass
+
+        # schedule a new one
+        entries["equip_job"] = self.parent.after(
+            self.equipment_debounce_ms,
+            lambda: self._finalize_player(entries)
+        )
 
     def _finalize_player(self, entries):
         # 1) apply team/duplicate rules using equipment id
