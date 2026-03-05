@@ -323,7 +323,8 @@ class PlayerEntryScreen:
             if not player['codename']:
                 messagebox.showwarning("Warning", "At least one player is missing a codename.")
                 return
-
+            
+        self.parent.unbind("<F1>")
         self.parent.unbind("<F5>")
         self.parent.unbind("<F12>")
         self.frame.destroy()
