@@ -3,12 +3,13 @@
 main.py - Photon Laser Tag Main Application (UI Shell)
 
 Entry point. Coordinates screen transitions:
-    Splash Screen → Player Entry → Play Action (placeholder) → Player Entry (loop)
+    Splash Screen → Player Entry → Countdown → Play Action (placeholder) → Player Entry (loop)
 """
 
 import tkinter as tk
 from splash_screen import SplashScreen
 from player_entry import PlayerEntryScreen
+from countdown import CountdownScreen
 
 
 class PhotonApp:
@@ -38,8 +39,13 @@ class PhotonApp:
         print(f"  Red team  ({len(red_players)} players): {red_players}")
         print(f"  Green team ({len(green_players)} players): {green_players}")
 
-        # TODO: Replace with PlayActionScreen when ready
-        self._show_game_placeholder(red_players, green_players)
+        # Show the countdown before game starts
+        self.show_countdown(red_players, green_players)
+    
+    def show_countdown(self, *game_args):
+        self.current_screen = CountdownScreen(self.root, lambda: self._show_game_placeholder(*game_args), self.show_player_entry)
+        self.current_screen.show()
+
 
     def _show_game_placeholder(self, red_players, green_players):
         """Temporary stand-in for the Play Action Screen."""
