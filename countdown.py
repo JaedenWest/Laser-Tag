@@ -8,17 +8,16 @@ Displays a countdown from 30 to 1 using countdown images.
 import tkinter as tk
 
 class CountdownScreen:
-    """Displays a 30-second countdown before the game starts."""
-    COUNTDOWN_DURATION = 30  # seconds
-
-    def __init__(self, parent, callback, cancel_callback):
+    """Displays a countdown before the game starts."""
+    def __init__(self, parent, callback, cancel_callback, short_countdown=False):
         self.parent = parent
         self.callback = callback
         self.cancel_callback = cancel_callback
         self.frame = None
         self.label = None
         self.photo = None
-        self.current_number = self.COUNTDOWN_DURATION
+        self.countdown_duration = 5 if short_countdown else 30
+        self.current_number = self.countdown_duration
         self.scheduled_callback = None
 
     def show(self):
@@ -54,7 +53,7 @@ class CountdownScreen:
 
     def _start_countdown(self):
         """Start the countdown sequence."""
-        self.current_number = self.COUNTDOWN_DURATION
+        self.current_number = self.countdown_duration
 
         # Start displaying countdown numbers
         self._show_next_number()

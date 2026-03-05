@@ -34,16 +34,21 @@ class PhotonApp:
         self.current_screen = PlayerEntryScreen(self.root, self.start_game)
         self.current_screen.show()
 
-    def start_game(self, red_players, green_players):
+    def start_game(self, red_players, green_players, short_countdown=False):
         print("Game starting!")
         print(f"  Red team  ({len(red_players)} players): {red_players}")
         print(f"  Green team ({len(green_players)} players): {green_players}")
 
         # Show the countdown before game starts
-        self.show_countdown(red_players, green_players)
+        self.show_countdown(red_players, green_players, short_countdown)
     
-    def show_countdown(self, *game_args):
-        self.current_screen = CountdownScreen(self.root, lambda: self._show_game_placeholder(*game_args), self.show_player_entry)
+    def show_countdown(self, red_players, green_players, short_countdown=False):
+        self.current_screen = CountdownScreen(
+            self.root,
+            lambda: self._show_game_placeholder(red_players, green_players),
+            self.show_player_entry,
+            short_countdown,
+        )
         self.current_screen.show()
 
 

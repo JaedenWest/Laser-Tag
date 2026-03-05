@@ -22,6 +22,7 @@ class PlayerEntryScreen:
         self.red_team_entries = []
         self.green_team_entries = []
         self.udp_addr_entry = None
+        self.shift_held = False
 
     def show(self):
         self.frame = tk.Frame(self.parent, bg="#1a1a2e")
@@ -49,6 +50,10 @@ class PlayerEntryScreen:
         self.parent.bind("<F5>", lambda e: self._start_game())
         self.parent.bind("<F12>", lambda e: self._clear_all())
         self.parent.bind("<F1>", lambda e: self._show_add_player_dialog())
+        self.parent.bind("<KeyPress-Shift_L>", self._on_shift_press)
+        self.parent.bind("<KeyPress-Shift_R>", self._on_shift_press)
+        self.parent.bind("<KeyRelease-Shift_L>", self._on_shift_release)
+        self.parent.bind("<KeyRelease-Shift_R>", self._on_shift_release)
 
         if self.red_team_entries:
             self.red_team_entries[0]["id"].focus_set()
@@ -327,10 +332,14 @@ class PlayerEntryScreen:
         self.parent.unbind("<F1>")
         self.parent.unbind("<F5>")
         self.parent.unbind("<F12>")
+        self.parent.unbind("<KeyPress-Shift_L>")
+        self.parent.unbind("<KeyPress-Shift_L>")
+        self.parent.unbind("<KeyRelease-Shift_L>")
+        self.parent.unbind("<KeyRelease-Shift_R>")
         self.frame.destroy()
 
         if self.start_game_callback:
-            self.start_game_callback(red_players, green_players)
+            self.start_game_callback(red_players, green_players, short_countdown=self.shift_held)
 
     def _collect_team_data(self, entries_list):
         players = []
@@ -513,9 +522,15 @@ class PlayerEntryScreen:
         if self.frame:
             self.frame.destroy()
 
+    def _on_shift_press(self, event=None):
+        self.shift_held = True
+
+    def _on_shift_release(self, event=None):
+        self.shift_held = False
+
 
 if __name__ == "__main__":
-    def on_start_game(red_players, green_players):
+    def on_start_game(red_players, green_players, short_countdown):
         print(f"Red team:   {red_players}")
         print(f"Green team: {green_players}")
         root.destroy()
