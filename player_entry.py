@@ -22,7 +22,7 @@ class PlayerEntryScreen:
         self.red_team_entries = []
         self.green_team_entries = []
         self.udp_addr_entry = None
-        self.shift_held = False
+        self.equipment_debounce_ms = 600 #delay to start broadcasting. can tweak.
 
     def show(self):
         self.frame = tk.Frame(self.parent, bg="#1a1a2e")
@@ -50,10 +50,6 @@ class PlayerEntryScreen:
         self.parent.bind("<F5>", lambda e: self._start_game())
         self.parent.bind("<F12>", lambda e: self._clear_all())
         self.parent.bind("<F1>", lambda e: self._show_add_player_dialog())
-        self.parent.bind("<KeyPress-Shift_L>", self._on_shift_press)
-        self.parent.bind("<KeyPress-Shift_R>", self._on_shift_press)
-        self.parent.bind("<KeyRelease-Shift_L>", self._on_shift_release)
-        self.parent.bind("<KeyRelease-Shift_R>", self._on_shift_release)
 
         if self.red_team_entries:
             self.red_team_entries[0]["id"].focus_set()
@@ -88,9 +84,20 @@ class PlayerEntryScreen:
         codename_entry.config(state="readonly")
         entries["codename"] = codename_entry
 
-        equipment_entry = tk.Entry(parent_frame, width=10, justify="center")
+        equipment_var = tk.StringVar()
+
+        equipment_entry = tk.Entry(
+            parent_frame,
+            width=10,
+            justify="center",
+            textvariable=equipment_var
+        )
+
         equipment_entry.grid(row=grid_row, column=2, padx=2, pady=2)
+
         entries["equipment"] = equipment_entry
+        entries["equipment_var"] = equipment_var
+        entries["equip_job"] = None
 
         # Multiple events to trigger codename lookup (macOS <FocusOut> can be unreliable)
         id_entry.bind("<Return>", lambda e, ent=entries: self._schedule_lookup(ent))
@@ -99,7 +106,8 @@ class PlayerEntryScreen:
         codename_entry.bind("<Button-1>", lambda e, ent=entries: self._schedule_lookup(ent))
         equipment_entry.bind("<FocusIn>", lambda e, ent=entries: self._schedule_lookup(ent))
         equipment_entry.bind("<Return>", lambda e, ent=entries: self._finalize_player(ent))
-
+        
+        equipment_var.trace_add("write", lambda *args, ent=entries: self._schedule_finalize(ent))
 
 
         return entries
@@ -328,18 +336,13 @@ class PlayerEntryScreen:
             if not player['codename']:
                 messagebox.showwarning("Warning", "At least one player is missing a codename.")
                 return
-            
-        self.parent.unbind("<F1>")
+
         self.parent.unbind("<F5>")
         self.parent.unbind("<F12>")
-        self.parent.unbind("<KeyPress-Shift_L>")
-        self.parent.unbind("<KeyPress-Shift_L>")
-        self.parent.unbind("<KeyRelease-Shift_L>")
-        self.parent.unbind("<KeyRelease-Shift_R>")
         self.frame.destroy()
 
         if self.start_game_callback:
-            self.start_game_callback(red_players, green_players, short_countdown=self.shift_held)
+            self.start_game_callback(red_players, green_players)
 
     def _collect_team_data(self, entries_list):
         players = []
@@ -378,6 +381,9 @@ class PlayerEntryScreen:
         entries["codename"].config(state="normal")
         entries["codename"].delete(0, tk.END)
         entries["codename"].config(state="readonly")
+        job = entries.get("equip_job")
+        if job:
+            self.parent.after_cancel(job)
 
     def _broadcast_equipment(self, entries):
         player_id = entries["id"].get().strip()
@@ -510,6 +516,25 @@ class PlayerEntryScreen:
                 except ValueError:
                     pass
 
+    def _schedule_finalize(self, entries):
+        """
+        Debounce finalize: wait briefly after user stops typing equipment ID,
+        then enforce rules + broadcast.
+        """
+        # cancel any previously scheduled finalize for this row
+        job = entries.get("equip_job")
+        if job is not None:
+            try:
+                self.parent.after_cancel(job)
+            except Exception:
+                pass
+
+        # schedule a new one
+        entries["equip_job"] = self.parent.after(
+            self.equipment_debounce_ms,
+            lambda: self._finalize_player(entries)
+        )
+
     def _finalize_player(self, entries):
         # 1) apply team/duplicate rules using equipment id
         if not self._apply_equipment_rules(entries):
@@ -522,15 +547,9 @@ class PlayerEntryScreen:
         if self.frame:
             self.frame.destroy()
 
-    def _on_shift_press(self, event=None):
-        self.shift_held = True
-
-    def _on_shift_release(self, event=None):
-        self.shift_held = False
-
 
 if __name__ == "__main__":
-    def on_start_game(red_players, green_players, short_countdown):
+    def on_start_game(red_players, green_players):
         print(f"Red team:   {red_players}")
         print(f"Green team: {green_players}")
         root.destroy()
