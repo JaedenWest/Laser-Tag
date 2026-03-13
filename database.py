@@ -99,10 +99,15 @@ def lookup_player_codename(player_id):
 
 def add_new_player(player_id, codename):
     if not _db_available():
+        if player_id in _STUB_PLAYERS:
+            return False
         _STUB_PLAYERS[player_id] = codename
         return True
 
     try:
+        existing_player = get_player_by_id(player_id)
+        if existing_player is not None:
+            return False
         add_player(player_id, codename)
         return True
     except psycopg2.Error as e:
