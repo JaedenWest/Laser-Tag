@@ -30,10 +30,61 @@ class PlayActionScreen:
         self.frame.grid_rowconfigure(2, weight=1)
 
         # Header
+        header = tk.Frame(self.frame, bg="#1a1a2e")
+        header.grid(row=0, column=0, columnspan=3, pady=20, sticky="ew")
+
+        header.grid_columnconfigure(0, weight=1)
+        header.grid_columnconfigure(1, weight=1)
+        header.grid_columnconfigure(2, weight=1)
+
+        # RED TEAM SCORE
+        red_frame = tk.Frame(header, bg="#1a1a2e")
+        red_frame.grid(row=0, column=0)
+
         tk.Label(
-            self.frame, text="GAME IN PROGRESS",
-            font=("Helvetica", 28, "bold"), fg="white", bg="#1a1a2e",
-        ).grid(row=0, column=0, columnspan=3, pady=20)
+            red_frame,
+            text="RED TEAM SCORE",
+            font=("Helvetica", 17, "bold"),
+            fg="#ff4444",
+            bg="#1a1a2e",
+        ).pack()
+
+        tk.Label(
+            red_frame,
+            text="0",
+            font=("Helvetica", 28, "bold"),
+            fg="white",
+            bg="#1a1a2e",
+        ).pack()
+
+        # GAME TITLE
+        tk.Label(
+            header,
+            text="GAME IN PROGRESS",
+            font=("Helvetica", 28, "bold"),
+            fg="white",
+            bg="#1a1a2e",
+        ).grid(row=0, column=1, padx=20)
+
+        # GREEN TEAM SCORE
+        green_frame = tk.Frame(header, bg="#1a1a2e")
+        green_frame.grid(row=0, column=2)
+
+        tk.Label(
+            green_frame,
+            text="GREEN TEAM SCORE",
+            font=("Helvetica", 17, "bold"),
+            fg="#44ff44",
+            bg="#1a1a2e",
+        ).pack()
+
+        tk.Label(
+            green_frame,
+            text="0",
+            font=("Helvetica", 28, "bold"),
+            fg="white",
+            bg="#1a1a2e",
+        ).pack()
 
         # Row 1: Team panels and timer
         self._create_team_panel(self.red_players, "RED TEAM", "#ff4444", column=0)
