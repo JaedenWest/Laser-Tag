@@ -162,32 +162,8 @@ class PlayerEntryScreen:
                 self._clear_row(entries)
                 return
 
-        # odd/even rule
-        should_be_green = (player_id % 2 == 0)
-        typed_green = entries in self.green_team_entries
-
-        if should_be_green != typed_green:
-            correct_team = self.green_team_entries if should_be_green else self.red_team_entries
-
-            target = None
-            for row in correct_team:
-                if not row["id"].get().strip():
-                    target = row
-                    break
-
-            if not target:
-                messagebox.showwarning("Team Full", "No space on correct team.")
-                self._clear_row(entries)
-                return
-
-            target["id"].insert(0, str(player_id))
-            self._clear_row(entries)
-
-            self._lookup_codename(target)
-            target["equipment"].focus_set()
-            return
-
         self._lookup_codename(entries)
+        
 
     def _apply_equipment_rules(self, entries) -> bool:
         """
