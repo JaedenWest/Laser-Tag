@@ -298,6 +298,18 @@ class PlayerEntryScreen:
 
 
     def _start_game(self):
+        # Check for incomplete rows
+        for entries in self.red_team_entries + self.green_team_entries:
+            player_id = entries["id"].get().strip()
+            equipment_id = entries["equipment"].get().strip()
+
+            if player_id and not equipment_id:
+                messagebox.showwarning("Warning", "A player is missing an equipment ID.")
+                return
+            if equipment_id and not player_id:
+                messagebox.showwarning("Warning", "An equipment ID was entered without a player ID.")
+                return
+
         red_players = self._collect_team_data(self.red_team_entries)
         green_players = self._collect_team_data(self.green_team_entries)
 
