@@ -162,33 +162,7 @@ class PlayerEntryScreen:
                 self._clear_row(entries)
                 return
 
-        # odd/even rule
-#        should_be_green = (player_id % 2 == 0)
-#        typed_green = entries in self.green_team_entries
-
-        # if should_be_green != typed_green:
-        #     correct_team = self.green_team_entries if should_be_green else self.red_team_entries
-
-        #     target = None
-        #     for row in correct_team:
-        #         if not row["id"].get().strip():
-        #             target = row
-        #             break
-
-        #     if not target:
-        #         messagebox.showwarning("Team Full", "No space on correct team.")
-        #         self._clear_row(entries)
-        #         return
-
-        #     target["id"].insert(0, str(player_id))
-        #     self._clear_row(entries)
-
-        #     self._lookup_codename(target)
-        #     target["equipment"].focus_set()
-        #     return
-
         self._lookup_codename(entries)
-
         
 
     def _apply_equipment_rules(self, entries) -> bool:
@@ -324,6 +298,18 @@ class PlayerEntryScreen:
 
 
     def _start_game(self):
+        # Check for incomplete rows
+        for entries in self.red_team_entries + self.green_team_entries:
+            player_id = entries["id"].get().strip()
+            equipment_id = entries["equipment"].get().strip()
+
+            if player_id and not equipment_id:
+                messagebox.showwarning("Warning", "A player is missing an equipment ID.")
+                return
+            if equipment_id and not player_id:
+                messagebox.showwarning("Warning", "An equipment ID was entered without a player ID.")
+                return
+
         red_players = self._collect_team_data(self.red_team_entries)
         green_players = self._collect_team_data(self.green_team_entries)
 
