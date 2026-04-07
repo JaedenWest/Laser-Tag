@@ -43,7 +43,7 @@ class PlayActionScreen:
         self.green_score_value_label = None
 
         self.pending_udp_events = Queue()
-        self.poll_lob = None
+        self.poll_job = None
 
         self._build_player_state()
 
@@ -151,6 +151,7 @@ class PlayActionScreen:
         self._start_game_timer()
         self._start_score_flash()
         self._poll_udp_queue()
+        send_message(202)
 
     def _create_team_panel(self, team_key, team_name, color, column):
         panel = tk.Frame(self.frame, bg="#0f0f23", bd=2, relief="groove")
