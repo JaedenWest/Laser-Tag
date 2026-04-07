@@ -31,6 +31,17 @@ class PlayActionScreen:
         self.red_player_rows = []
         self.green_player_rows = []
 
+        self.game_seconds_remaining = 360
+        self.timer_job = None
+
+        self.flash_on = False
+        self.flash_job = None
+
+        self.red_score_title_label = None
+        self.red_score_value_label = None
+        self.green_score_title_label = None
+        self.green_score_value_label = None
+
         self._build_player_state()
 
     def _build_player_state(self):
@@ -76,21 +87,23 @@ class PlayActionScreen:
         red_frame = tk.Frame(header, bg="#1a1a2e")
         red_frame.grid(row=0, column=0)
 
-        tk.Label(
+        self.red_score_title_label = tk.Label(
             red_frame,
             text="RED TEAM SCORE",
             font=("Helvetica", 17, "bold"),
             fg="#ff4444",
             bg="#1a1a2e",
-        ).pack()
+        )
+        self.red_score_title_label.pack()
 
-        tk.Label(
+        self.red_score_value_label = tk.Label(
             red_frame,
             textvariable=self.red_score_var,
             font=("Helvetica", 28, "bold"),
             fg="white",
             bg="#1a1a2e",
-        ).pack()
+        )
+        self.red_score_value_label.pack()
 
         tk.Label(
             header,
@@ -103,21 +116,23 @@ class PlayActionScreen:
         green_frame = tk.Frame(header, bg="#1a1a2e")
         green_frame.grid(row=0, column=2)
 
-        tk.Label(
+        self.green_score_title_label = tk.Label(
             green_frame,
             text="GREEN TEAM SCORE",
             font=("Helvetica", 17, "bold"),
             fg="#44ff44",
             bg="#1a1a2e",
-        ).pack()
+        )
+        self.green_score_title_label.pack()
 
-        tk.Label(
+        self.green_score_value_label = tk.Label(
             green_frame,
             textvariable=self.green_score_var,
             font=("Helvetica", 28, "bold"),
             fg="white",
             bg="#1a1a2e",
-        ).pack()
+        )
+        self.green_score_value_label.pack()
 
         self._create_team_panel("red", "RED TEAM", "#ff4444", column=0)
         self._create_timer_panel()
@@ -129,6 +144,9 @@ class PlayActionScreen:
 
         set_message_handler(self._handle_udp_message)
         self._refresh_scores()
+        self._log_event("Game started")
+        self._start_game_timer()
+        self._start_score_flash()
 
     def _create_team_panel(self, team_key, team_name, color, column):
         panel = tk.Frame(self.frame, bg="#0f0f23", bd=2, relief="groove")
@@ -262,6 +280,53 @@ class PlayActionScreen:
             command=self._end_game,
         ).pack()
 
+    def _start_game_timer(self):
+        self.game_seconds_remaining = 360
+        self._update_timer_display()
+        self._tick_timer()
+
+    def _tick_timer(self):
+        if self.game_seconds_remaining <= 0:
+            self.timer_var.set("0:00")
+            self._log_event("Game over")
+            self._end_game()
+            return
+
+        self.game_seconds_remaining -= 1
+        self._update_timer_display()
+        self.timer_job = self.parent.after(1000, self._tick_timer)
+
+    def _update_timer_display(self):
+        minutes = self.game_seconds_remaining // 60
+        seconds = self.game_seconds_remaining % 60
+        self.timer_var.set(f"{minutes}:{seconds:02d}")
+
+    def _start_score_flash(self):
+        self._flash_score_labels()
+
+    def _flash_score_labels(self):
+        red_total = int(self.red_score_var.get())
+        green_total = int(self.green_score_var.get())
+
+        self.flash_on = not self.flash_on
+
+        # reset defaults first
+        self.red_score_title_label.config(fg="#ff4444")
+        self.green_score_title_label.config(fg="#44ff44")
+        self.red_score_value_label.config(fg="white")
+        self.green_score_value_label.config(fg="white")
+
+        if red_total > green_total:
+            if self.flash_on:
+                self.red_score_title_label.config(fg="white")
+                self.red_score_value_label.config(fg="#ff4444")
+        elif green_total > red_total:
+            if self.flash_on:
+                self.green_score_title_label.config(fg="white")
+                self.green_score_value_label.config(fg="#44ff44")
+
+        self.flash_job = self.parent.after(500, self._flash_score_labels)
+
     def _handle_udp_message(self, parsed):
         self.parent.after(0, lambda: self._process_udp_message(parsed))
 
@@ -271,6 +336,7 @@ class PlayActionScreen:
         if message_type == "tag":
             attacker_eq = parsed[1]
             target_value = parsed[2]
+            self._log_event(f"Received event: {attacker_eq}:{target_value}")
             self._handle_tag_event(attacker_eq, target_value)
 
         elif message_type == "code":
@@ -381,6 +447,14 @@ class PlayActionScreen:
     def _end_game(self):
         set_message_handler(None)
 
+        if self.timer_job is not None:
+            self.parent.after_cancel(self.timer_job)
+            self.timer_job = None
+
+        if self.flash_job is not None:
+            self.parent.after_cancel(self.flash_job)
+            self.flash_job = None
+
         send_message(221)
         send_message(221)
         send_message(221)
@@ -394,6 +468,15 @@ class PlayActionScreen:
 
     def destroy(self):
         set_message_handler(None)
+
+        if self.timer_job is not None:
+            self.parent.after_cancel(self.timer_job)
+            self.timer_job = None
+
+        if self.flash_job is not None:
+            self.parent.after_cancel(self.flash_job)
+            self.flash_job = None
+
         self.parent.unbind("<F5>")
         if self.frame:
             self.frame.destroy()
