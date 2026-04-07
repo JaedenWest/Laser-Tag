@@ -11,7 +11,7 @@ Handles:
 
 import tkinter as tk
 from udp.udp_service import set_message_handler, send_message
-
+from queue import Queue, Empty
 
 class PlayActionScreen:
     """Displays the in-game action screen with teams, timer, and event log."""
@@ -41,6 +41,9 @@ class PlayActionScreen:
         self.red_score_value_label = None
         self.green_score_title_label = None
         self.green_score_value_label = None
+
+        self.pending_udp_events = Queue()
+        self.poll_lob = None
 
         self._build_player_state()
 
@@ -147,6 +150,7 @@ class PlayActionScreen:
         self._log_event("Game started")
         self._start_game_timer()
         self._start_score_flash()
+        self._poll_udp_queue()
 
     def _create_team_panel(self, team_key, team_name, color, column):
         panel = tk.Frame(self.frame, bg="#0f0f23", bd=2, relief="groove")
@@ -328,7 +332,17 @@ class PlayActionScreen:
         self.flash_job = self.parent.after(500, self._flash_score_labels)
 
     def _handle_udp_message(self, parsed):
-        self.parent.after(0, lambda: self._process_udp_message(parsed))
+        self.pending_udp_events.put(parsed)
+
+    def _poll_udp_queue(self):
+        try:
+            while True:
+                parsed = self.pending_udp_events.get_nowait()
+                self._process_udp_message(parsed)
+        except Empty:
+            pass
+
+        self.poll_job = self.parent.after(100, self._poll_udp_queue)
 
     def _process_udp_message(self, parsed):
         message_type = parsed[0]
@@ -455,6 +469,10 @@ class PlayActionScreen:
             self.parent.after_cancel(self.flash_job)
             self.flash_job = None
 
+        if self.poll_job is not None:
+            self.parent.after_cancel(self.poll_job)
+            self.poll_job = None
+
         send_message(221)
         send_message(221)
         send_message(221)
@@ -476,6 +494,10 @@ class PlayActionScreen:
         if self.flash_job is not None:
             self.parent.after_cancel(self.flash_job)
             self.flash_job = None
+
+        if self.poll_job is not None:
+            self.parent.after_cancel(self.poll_job)
+            self.poll_job = None
 
         self.parent.unbind("<F5>")
         if self.frame:
