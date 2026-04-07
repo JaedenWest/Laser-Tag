@@ -6,6 +6,7 @@ Displays a countdown from 30 to 1 using countdown images.
 """
 
 import tkinter as tk
+from udp.udp_service import send_message
 
 class CountdownScreen:
     """Displays a countdown before the game starts."""
@@ -76,6 +77,8 @@ class CountdownScreen:
 
     def _end_countdown(self):
         """Clean up and call the callback when countdown completes."""
+
+        send_message(202)  # Broadcast game start code
 
         if self.frame:
             self.parent.unbind("<Escape>")

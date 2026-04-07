@@ -2,11 +2,15 @@
 """
 play_action.py - Play Action Screen Component
 
-Displays both teams' players with codenames and scores, a timer placeholder,
-and an event log placeholder during an active game.
+Handles:
+- live player scores
+- team totals
+- event log
+- UDP gameplay events
 """
 
 import tkinter as tk
+from udp.udp_service import set_message_handler, send_message
 
 
 class PlayActionScreen:
@@ -19,6 +23,39 @@ class PlayActionScreen:
         self.end_callback = end_callback
         self.frame = None
 
+        self.players_by_equipment = {}
+        self.red_score_var = tk.StringVar(value="0")
+        self.green_score_var = tk.StringVar(value="0")
+        self.timer_var = tk.StringVar(value="6:00")
+
+        self.red_player_rows = []
+        self.green_player_rows = []
+
+        self._build_player_state()
+
+    def _build_player_state(self):
+        for player in self.red_players:
+            equipment = int(player["equipment"])
+            self.players_by_equipment[equipment] = {
+                "id": player["id"],
+                "codename": player["codename"],
+                "equipment": equipment,
+                "team": "red",
+                "score": 0,
+                "has_base": False,
+            }
+
+        for player in self.green_players:
+            equipment = int(player["equipment"])
+            self.players_by_equipment[equipment] = {
+                "id": player["id"],
+                "codename": player["codename"],
+                "equipment": equipment,
+                "team": "green",
+                "score": 0,
+                "has_base": False,
+            }
+
     def show(self):
         self.frame = tk.Frame(self.parent, bg="#1a1a2e")
         self.frame.pack(fill="both", expand=True)
@@ -29,7 +66,6 @@ class PlayActionScreen:
         self.frame.grid_rowconfigure(1, weight=1)
         self.frame.grid_rowconfigure(2, weight=1)
 
-        # Header
         header = tk.Frame(self.frame, bg="#1a1a2e")
         header.grid(row=0, column=0, columnspan=3, pady=20, sticky="ew")
 
@@ -37,7 +73,6 @@ class PlayActionScreen:
         header.grid_columnconfigure(1, weight=1)
         header.grid_columnconfigure(2, weight=1)
 
-        # RED TEAM SCORE
         red_frame = tk.Frame(header, bg="#1a1a2e")
         red_frame.grid(row=0, column=0)
 
@@ -51,13 +86,12 @@ class PlayActionScreen:
 
         tk.Label(
             red_frame,
-            text="0",
+            textvariable=self.red_score_var,
             font=("Helvetica", 28, "bold"),
             fg="white",
             bg="#1a1a2e",
         ).pack()
 
-        # GAME TITLE
         tk.Label(
             header,
             text="GAME IN PROGRESS",
@@ -66,7 +100,6 @@ class PlayActionScreen:
             bg="#1a1a2e",
         ).grid(row=0, column=1, padx=20)
 
-        # GREEN TEAM SCORE
         green_frame = tk.Frame(header, bg="#1a1a2e")
         green_frame.grid(row=0, column=2)
 
@@ -80,99 +113,119 @@ class PlayActionScreen:
 
         tk.Label(
             green_frame,
-            text="0",
+            textvariable=self.green_score_var,
             font=("Helvetica", 28, "bold"),
             fg="white",
             bg="#1a1a2e",
         ).pack()
 
-        # Row 1: Team panels and timer
-        self._create_team_panel(self.red_players, "RED TEAM", "#ff4444", column=0)
+        self._create_team_panel("red", "RED TEAM", "#ff4444", column=0)
         self._create_timer_panel()
-        self._create_team_panel(self.green_players, "GREEN TEAM", "#44ff44", column=2)
-
-        # Row 2: Event log
+        self._create_team_panel("green", "GREEN TEAM", "#44ff44", column=2)
         self._create_event_log()
-
-        # Row 3: Footer
         self._create_footer()
 
         self.parent.bind("<F5>", lambda e: self._end_game())
 
-    def _create_team_panel(self, players, team_name, color, column):
-        panel = tk.Frame(
-            self.frame, bg="#0f0f23", bd=2, relief="groove",
-        )
+        set_message_handler(self._handle_udp_message)
+        self._refresh_scores()
+
+    def _create_team_panel(self, team_key, team_name, color, column):
+        panel = tk.Frame(self.frame, bg="#0f0f23", bd=2, relief="groove")
         panel.grid(row=1, column=column, padx=10, pady=10, sticky="nsew")
 
         tk.Label(
-            panel, text=team_name,
-            font=("Helvetica", 16, "bold"), fg=color, bg="#0f0f23",
+            panel,
+            text=team_name,
+            font=("Helvetica", 16, "bold"),
+            fg=color,
+            bg="#0f0f23",
         ).pack(pady=(10, 5))
 
         header = tk.Frame(panel, bg="#0f0f23")
         header.pack(fill="x", padx=15)
 
         tk.Label(
-            header, text="Codename",
-            font=("Helvetica", 11, "bold"), fg="white", bg="#0f0f23",
+            header,
+            text="Codename",
+            font=("Helvetica", 11, "bold"),
+            fg="white",
+            bg="#0f0f23",
         ).pack(side="left")
 
         tk.Label(
-            header, text="Score",
-            font=("Helvetica", 11, "bold"), fg="white", bg="#0f0f23",
+            header,
+            text="Score",
+            font=("Helvetica", 11, "bold"),
+            fg="white",
+            bg="#0f0f23",
         ).pack(side="right")
 
-        if players:
-            for player in players:
-                row = tk.Frame(panel, bg="#0f0f23")
-                row.pack(fill="x", padx=15, pady=2)
+        rows = self.red_player_rows if team_key == "red" else self.green_player_rows
+        players = [
+            player for player in self.players_by_equipment.values()
+            if player["team"] == team_key
+        ]
 
-                tk.Label(
-                    row, text=player.get("codename", "Unknown"),
-                    font=("Helvetica", 12), fg=color, bg="#0f0f23",
-                ).pack(side="left")
+        for player in players:
+            row = tk.Frame(panel, bg="#0f0f23")
+            row.pack(fill="x", padx=15, pady=2)
 
-                tk.Label(
-                    row, text="0",
-                    font=("Helvetica", 12), fg="white", bg="#0f0f23",
-                ).pack(side="right")
-        else:
+            name_var = tk.StringVar(value=player["codename"])
+            score_var = tk.StringVar(value=str(player["score"]))
+
             tk.Label(
-                panel, text="No players",
-                font=("Helvetica", 11, "italic"), fg="gray", bg="#0f0f23",
-            ).pack(pady=10)
+                row,
+                textvariable=name_var,
+                font=("Helvetica", 12),
+                fg=color,
+                bg="#0f0f23",
+            ).pack(side="left")
+
+            tk.Label(
+                row,
+                textvariable=score_var,
+                font=("Helvetica", 12),
+                fg="white",
+                bg="#0f0f23",
+            ).pack(side="right")
+
+            rows.append({
+                "equipment": player["equipment"],
+                "name_var": name_var,
+                "score_var": score_var,
+            })
 
     def _create_timer_panel(self):
-        panel = tk.Frame(
-            self.frame, bg="#0f0f23", bd=2, relief="groove",
-        )
+        panel = tk.Frame(self.frame, bg="#0f0f23", bd=2, relief="groove")
         panel.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
 
         tk.Label(
-            panel, text="GAME TIMER",
-            font=("Helvetica", 16, "bold"), fg="white", bg="#0f0f23",
+            panel,
+            text="GAME TIMER",
+            font=("Helvetica", 16, "bold"),
+            fg="white",
+            bg="#0f0f23",
         ).pack(pady=(10, 5))
 
         tk.Label(
-            panel, text="6:00",
-            font=("Helvetica", 48, "bold"), fg="#ffcc00", bg="#0f0f23",
+            panel,
+            textvariable=self.timer_var,
+            font=("Helvetica", 48, "bold"),
+            fg="#ffcc00",
+            bg="#0f0f23",
         ).pack(pady=10)
 
-        tk.Label(
-            panel, text="(Sprint 4)",
-            font=("Helvetica", 10, "italic"), fg="gray", bg="#0f0f23",
-        ).pack()
-
     def _create_event_log(self):
-        log_frame = tk.Frame(
-            self.frame, bg="#0f0f23", bd=2, relief="groove",
-        )
+        log_frame = tk.Frame(self.frame, bg="#0f0f23", bd=2, relief="groove")
         log_frame.grid(row=2, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
 
         tk.Label(
-            log_frame, text="EVENT LOG",
-            font=("Helvetica", 14, "bold"), fg="white", bg="#0f0f23",
+            log_frame,
+            text="EVENT LOG",
+            font=("Helvetica", 14, "bold"),
+            fg="white",
+            bg="#0f0f23",
         ).pack(pady=(10, 5))
 
         text_frame = tk.Frame(log_frame, bg="#0a0a1a")
@@ -182,26 +235,156 @@ class PlayActionScreen:
         scrollbar.pack(side="right", fill="y")
 
         self.event_log = tk.Text(
-            text_frame, height=8, bg="#0a0a1a", fg="#888888",
-            font=("Courier", 10), state="normal", wrap="word",
+            text_frame,
+            height=8,
+            bg="#0a0a1a",
+            fg="#dddddd",
+            font=("Courier", 10),
+            state="disabled",
+            wrap="word",
             yscrollcommand=scrollbar.set,
         )
         self.event_log.pack(side="left", fill="both", expand=True)
         scrollbar.config(command=self.event_log.yview)
-        self.event_log.insert("1.0", "Game events will appear here during gameplay...")
-        self.event_log.config(state="disabled")
 
     def _create_footer(self):
         footer = tk.Frame(self.frame, bg="#1a1a2e")
         footer.grid(row=3, column=0, columnspan=3, pady=15)
 
         tk.Button(
-            footer, text="End Game (F5)",
-            font=("Helvetica", 14, "bold"), bg="#dc3545", fg="white",
-            padx=30, pady=10, command=self._end_game,
+            footer,
+            text="End Game (F5)",
+            font=("Helvetica", 14, "bold"),
+            bg="#dc3545",
+            fg="white",
+            padx=30,
+            pady=10,
+            command=self._end_game,
         ).pack()
 
+    def _handle_udp_message(self, parsed):
+        self.parent.after(0, lambda: self._process_udp_message(parsed))
+
+    def _process_udp_message(self, parsed):
+        message_type = parsed[0]
+
+        if message_type == "tag":
+            attacker_eq = parsed[1]
+            target_value = parsed[2]
+            self._handle_tag_event(attacker_eq, target_value)
+
+        elif message_type == "code":
+            self._log_event(f"Received code {parsed[1]}")
+
+    def _handle_tag_event(self, attacker_eq, target_value):
+        attacker = self.players_by_equipment.get(attacker_eq)
+
+        if attacker is None:
+            self._log_event(f"Unknown attacker equipment ID: {attacker_eq}")
+            return
+
+        if target_value == 43:
+            if attacker["team"] == "red":
+                attacker["score"] += 100
+                attacker["has_base"] = True
+                self._log_event(f"{attacker['codename']} captured GREEN base (+100)")
+            else:
+                self._log_event(f"{attacker['codename']} hit GREEN base, but no points awarded")
+            self._refresh_scores()
+            return
+
+        if target_value == 53:
+            if attacker["team"] == "green":
+                attacker["score"] += 100
+                attacker["has_base"] = True
+                self._log_event(f"{attacker['codename']} captured RED base (+100)")
+            else:
+                self._log_event(f"{attacker['codename']} hit RED base, but no points awarded")
+            self._refresh_scores()
+            return
+
+        target = self.players_by_equipment.get(target_value)
+
+        if target is None:
+            self._log_event(f"{attacker['codename']} triggered unknown target/event: {target_value}")
+            return
+
+        if attacker["team"] == target["team"]:
+            attacker["score"] -= 10
+            target["score"] -= 10
+
+            send_message(attacker["equipment"])
+            send_message(target["equipment"])
+
+            self._log_event(
+                f"Friendly fire: {attacker['codename']} hit teammate {target['codename']} (-10 each)"
+            )
+        else:
+            attacker["score"] += 10
+
+            send_message(target["equipment"])
+
+            self._log_event(
+                f"{attacker['codename']} tagged {target['codename']} (+10)"
+            )
+
+        self._refresh_scores()
+
+    def _refresh_scores(self):
+        red_total = 0
+        green_total = 0
+
+        for player in self.players_by_equipment.values():
+            if player["team"] == "red":
+                red_total += player["score"]
+            else:
+                green_total += player["score"]
+
+        self.red_score_var.set(str(red_total))
+        self.green_score_var.set(str(green_total))
+
+        self._refresh_team_rows()
+
+    def _refresh_team_rows(self):
+        red_players = sorted(
+            [p for p in self.players_by_equipment.values() if p["team"] == "red"],
+            key=lambda player: player["score"],
+            reverse=True,
+        )
+
+        green_players = sorted(
+            [p for p in self.players_by_equipment.values() if p["team"] == "green"],
+            key=lambda player: player["score"],
+            reverse=True,
+        )
+
+        for row, player in zip(self.red_player_rows, red_players):
+            name = player["codename"]
+            if player["has_base"]:
+                name = "[BASE] " + name
+            row["name_var"].set(name)
+            row["score_var"].set(str(player["score"]))
+
+        for row, player in zip(self.green_player_rows, green_players):
+            name = player["codename"]
+            if player["has_base"]:
+                name = "[BASE] " + name
+            row["name_var"].set(name)
+            row["score_var"].set(str(player["score"]))
+
+    def _log_event(self, text):
+        self.event_log.config(state="normal")
+        self.event_log.insert("end", text + "\n")
+        self.event_log.see("end")
+        self.event_log.config(state="disabled")
+
     def _end_game(self):
+        set_message_handler(None)
+
+        send_message(221)
+        send_message(221)
+        send_message(221)
+
         self.parent.unbind("<F5>")
         if self.frame:
             self.frame.destroy()
@@ -210,6 +393,7 @@ class PlayActionScreen:
             self.end_callback()
 
     def destroy(self):
+        set_message_handler(None)
         self.parent.unbind("<F5>")
         if self.frame:
             self.frame.destroy()
