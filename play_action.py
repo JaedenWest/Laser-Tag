@@ -8,7 +8,8 @@ Handles:
 - event log
 - UDP gameplay events
 """
-
+from PIL import Image, ImageTk
+import os
 import tkinter as tk
 from udp.udp_service import set_message_handler, send_message
 from queue import Queue, Empty
@@ -69,6 +70,11 @@ class PlayActionScreen:
                 "score": 0,
                 "has_base": False,
             }
+    def _hide_all_trophies(self):
+        self.red_left_trophy.grid_remove()
+        self.red_right_trophy.grid_remove()
+        self.green_left_trophy.grid_remove()
+        self.green_right_trophy.grid_remove()
 
     def show(self):
         self.frame = tk.Frame(self.parent, bg="#1a1a2e")
@@ -80,6 +86,13 @@ class PlayActionScreen:
         self.frame.grid_rowconfigure(1, weight=1)
         self.frame.grid_rowconfigure(2, weight=1)
 
+        # Load trophy image
+
+        img = Image.open(os.path.join("assets", "images", "Trophy.png"))
+        img = img.resize((25, 25), Image.LANCZOS)
+        self.trophy_image = ImageTk.PhotoImage(img)
+
+
         header = tk.Frame(self.frame, bg="#1a1a2e")
         header.grid(row=0, column=0, columnspan=3, pady=20, sticky="ew")
 
@@ -90,14 +103,23 @@ class PlayActionScreen:
         red_frame = tk.Frame(header, bg="#1a1a2e")
         red_frame.grid(row=0, column=0)
 
+        red_row = tk.Frame(red_frame, bg="#1a1a2e")
+        red_row.pack(fill="x")
+
+        self.red_left_trophy = tk.Label(red_row, image=self.trophy_image, bg="#1a1a2e")
+        self.red_left_trophy.grid(row=0, column = 0, padx=(0, 5))
+
         self.red_score_title_label = tk.Label(
-            red_frame,
+            red_row,
             text="RED TEAM SCORE",
             font=("Helvetica", 17, "bold"),
             fg="#ff4444",
             bg="#1a1a2e",
         )
-        self.red_score_title_label.pack()
+        self.red_score_title_label.grid(row=0, column=1, padx=5)
+
+        self.red_right_trophy = tk.Label(red_row, image=self.trophy_image, bg="#1a1a2e")
+        self.red_right_trophy.grid(row=0, column=2, padx=(5,0))
 
         self.red_score_value_label = tk.Label(
             red_frame,
@@ -119,14 +141,25 @@ class PlayActionScreen:
         green_frame = tk.Frame(header, bg="#1a1a2e")
         green_frame.grid(row=0, column=2)
 
+        green_row = tk.Frame(green_frame, bg="#1a1a2e")
+        green_row.pack(fill = "x")
+
+        self.green_left_trophy = tk.Label(green_row, image=self.trophy_image, bg="#1a1a2e")
+        self.green_left_trophy.grid(row=0, column=0, padx=(0, 5))
+
+        
+        self.green_right_trophy = tk.Label(green_row, image=self.trophy_image, bg="#1a1a2e")
+        self.green_right_trophy.grid(row=0, column=2, padx=(5, 0))
+
+
         self.green_score_title_label = tk.Label(
-            green_frame,
+            green_row,
             text="GREEN TEAM SCORE",
             font=("Helvetica", 17, "bold"),
             fg="#44ff44",
             bg="#1a1a2e",
         )
-        self.green_score_title_label.pack()
+        self.green_score_title_label.grid(row=0, column=1, padx=5)
 
         self.green_score_value_label = tk.Label(
             green_frame,
@@ -152,6 +185,7 @@ class PlayActionScreen:
         self._start_score_flash()
         self._poll_udp_queue()
         send_message(202)
+        self._hide_all_trophies()
 
     def _create_team_panel(self, team_key, team_name, color, column):
         panel = tk.Frame(self.frame, bg="#0f0f23", bd=2, relief="groove")
@@ -312,6 +346,7 @@ class PlayActionScreen:
     def _flash_score_labels(self):
         red_total = int(self.red_score_var.get())
         green_total = int(self.green_score_var.get())
+        self._hide_all_trophies()
 
         self.flash_on = not self.flash_on
 
@@ -325,10 +360,17 @@ class PlayActionScreen:
             if self.flash_on:
                 self.red_score_title_label.config(fg="white")
                 self.red_score_value_label.config(fg="#ff4444")
+
+                self.red_left_trophy.grid(row=0, column=0, padx=(0,5))
+                self.red_right_trophy.grid(row=0, column=2, padx=(5,0))
+
         elif green_total > red_total:
             if self.flash_on:
                 self.green_score_title_label.config(fg="white")
                 self.green_score_value_label.config(fg="#44ff44")
+
+                self.green_left_trophy.grid(row=0, column=0, padx=(0,5))
+                self.green_right_trophy.grid(row=0, column=2, padx=(5,0))
 
         self.flash_job = self.parent.after(500, self._flash_score_labels)
 
