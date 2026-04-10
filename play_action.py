@@ -70,11 +70,7 @@ class PlayActionScreen:
                 "score": 0,
                 "has_base": False,
             }
-    def _hide_all_trophies(self):
-        self.red_left_trophy.grid_remove()
-        self.red_right_trophy.grid_remove()
-        self.green_left_trophy.grid_remove()
-        self.green_right_trophy.grid_remove()
+
 
     def show(self):
         self.frame = tk.Frame(self.parent, bg="#1a1a2e")
@@ -185,7 +181,18 @@ class PlayActionScreen:
         self._start_score_flash()
         self._poll_udp_queue()
         send_message(202)
-        self._hide_all_trophies()
+
+    def _hide_all_trophies(self):
+        self.red_left_trophy.grid_remove()
+        self.red_right_trophy.grid_remove()
+        self.green_left_trophy.grid_remove()
+        self.green_right_trophy.grid_remove()
+    def _show_red_trophies(self):
+        self.red_left_trophy.grid()
+        self.red_right_trophy.grid()
+    def _show_green_trophies(self):
+        self.green_left_trophy.grid()
+        self.green_right_trophy.grid()
 
     def _create_team_panel(self, team_key, team_name, color, column):
         panel = tk.Frame(self.frame, bg="#0f0f23", bd=2, relief="groove")
@@ -346,7 +353,6 @@ class PlayActionScreen:
     def _flash_score_labels(self):
         red_total = int(self.red_score_var.get())
         green_total = int(self.green_score_var.get())
-        self._hide_all_trophies()
 
         self.flash_on = not self.flash_on
 
@@ -356,21 +362,20 @@ class PlayActionScreen:
         self.red_score_value_label.config(fg="white")
         self.green_score_value_label.config(fg="white")
 
+        #always hide both trophies first
+        self._hide_all_trophies()
+
         if red_total > green_total:
             if self.flash_on:
                 self.red_score_title_label.config(fg="white")
                 self.red_score_value_label.config(fg="#ff4444")
-
-                self.red_left_trophy.grid(row=0, column=0, padx=(0,5))
-                self.red_right_trophy.grid(row=0, column=2, padx=(5,0))
-
+                self._show_red_trophies()
+                
         elif green_total > red_total:
             if self.flash_on:
                 self.green_score_title_label.config(fg="white")
                 self.green_score_value_label.config(fg="#44ff44")
-
-                self.green_left_trophy.grid(row=0, column=0, padx=(0,5))
-                self.green_right_trophy.grid(row=0, column=2, padx=(5,0))
+                self._show_green_trophies()
 
         self.flash_job = self.parent.after(500, self._flash_score_labels)
 
