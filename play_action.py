@@ -22,6 +22,7 @@ class PlayActionScreen:
         self.red_players = red_players
         self.green_players = green_players
         self.end_callback = end_callback
+        self.current_winner = None
         self.frame = None
 
         self.players_by_equipment = {}
@@ -82,8 +83,6 @@ class PlayActionScreen:
         self.frame.grid_rowconfigure(1, weight=1)
         self.frame.grid_rowconfigure(2, weight=1)
 
-        # Load trophy image
-
         img = Image.open(os.path.join("assets", "images", "Trophy.png"))
         img = img.resize((25, 25), Image.LANCZOS)
         self.trophy_image = ImageTk.PhotoImage(img)
@@ -103,7 +102,7 @@ class PlayActionScreen:
         red_row = tk.Frame(red_frame, bg="#1a1a2e")
         red_row.pack(fill="x")
 
-        self.red_left_trophy = tk.Label(red_row, image=self.trophy_image, bg="#1a1a2e")
+        self.red_left_trophy = tk.Label(red_row, image=self.trophy_image, bg="#1a1a2e", width= 25, height=25)
         self.red_left_trophy.grid(row=0, column = 0, padx=(0, 5))
 
         self.red_score_title_label = tk.Label(
@@ -115,7 +114,7 @@ class PlayActionScreen:
         )
         self.red_score_title_label.grid(row=0, column=1, padx=5)
 
-        self.red_right_trophy = tk.Label(red_row, image=self.trophy_image, bg="#1a1a2e")
+        self.red_right_trophy = tk.Label(red_row, image=self.trophy_image, bg="#1a1a2e", width= 25, height=25)
         self.red_right_trophy.grid(row=0, column=2, padx=(5,0))
 
         self.red_score_value_label = tk.Label(
@@ -141,11 +140,11 @@ class PlayActionScreen:
         green_row = tk.Frame(green_frame, bg="#1a1a2e")
         green_row.pack(fill = "x")
 
-        self.green_left_trophy = tk.Label(green_row, image=self.trophy_image, bg="#1a1a2e")
+        self.green_left_trophy = tk.Label(green_row, image=self.trophy_image, bg="#1a1a2e", width= 25, height=25)
         self.green_left_trophy.grid(row=0, column=0, padx=(0, 5))
 
         
-        self.green_right_trophy = tk.Label(green_row, image=self.trophy_image, bg="#1a1a2e")
+        self.green_right_trophy = tk.Label(green_row, image=self.trophy_image, bg="#1a1a2e", width= 25, height=25)
         self.green_right_trophy.grid(row=0, column=2, padx=(5, 0))
 
 
@@ -183,18 +182,20 @@ class PlayActionScreen:
         self._poll_udp_queue()
         send_message(202)
 
-    def _hide_all_trophies(self):
-        self.red_left_trophy.config(image=self.empty_image())
-        self.red_right_trophy.config(image=self.empty_image())
-        self.green_left_trophy.config(image=self.empty_image())
-        self.green_right_trophy.config(image=self.empty_image())
+    def _update_trophies(self, winner):
+        # clear first (stable state, no flicker loop)
+        self.red_left_trophy.config(image=self.empty_image)
+        self.red_right_trophy.config(image=self.empty_image)
+        self.green_left_trophy.config(image=self.empty_image)
+        self.green_right_trophy.config(image=self.empty_image)
 
-    def _show_red_trophies(self):
-        self.red_left_trophy.config(image=self.trophy_image)
-        self.red_right_trophy.config(image=self.trophy_image)
-    def _show_green_trophies(self):
-        self.green_left_trophy.config(image=self.trophy_image)
-        self.green_right_trophy.config(image=self.trophy_image)
+        if winner == "red":
+            self.red_left_trophy.config(image=self.trophy_image)
+            self.red_right_trophy.config(image=self.trophy_image)
+
+        elif winner == "green":
+            self.green_left_trophy.config(image=self.trophy_image)
+            self.green_right_trophy.config(image=self.trophy_image)
 
     def _create_team_panel(self, team_key, team_name, color, column):
         panel = tk.Frame(self.frame, bg="#0f0f23", bd=2, relief="groove")
@@ -364,20 +365,15 @@ class PlayActionScreen:
         self.red_score_value_label.config(fg="white")
         self.green_score_value_label.config(fg="white")
 
-        #always hide both trophies first
-        self._hide_all_trophies()
-
         if red_total > green_total:
             if self.flash_on:
                 self.red_score_title_label.config(fg="white")
                 self.red_score_value_label.config(fg="#ff4444")
-                self._show_red_trophies()
 
         elif green_total > red_total:
             if self.flash_on:
                 self.green_score_title_label.config(fg="white")
                 self.green_score_value_label.config(fg="#44ff44")
-                self._show_green_trophies()
 
         self.flash_job = self.parent.after(500, self._flash_score_labels)
 
@@ -474,6 +470,22 @@ class PlayActionScreen:
         self.green_score_var.set(str(green_total))
 
         self._refresh_team_rows()
+
+        if red_total > green_total:
+            winner = "red"
+        elif green_total > red_total:
+            winner = "green"
+        else:
+            winner = None
+
+        if winner != self.current_winner:
+            self.current_winner = winner
+            
+            if winner is None:
+                self._update_trophies(None)
+            else:
+                self._update_trophies(winner)
+        
 
     def _refresh_team_rows(self):
         red_players = sorted(
