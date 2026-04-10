@@ -183,17 +183,17 @@ class PlayActionScreen:
         send_message(202)
 
     def _hide_all_trophies(self):
-        self.red_left_trophy.grid_remove(image="")
-        self.red_right_trophy.grid_remove(image="")
-        self.green_left_trophy.grid_remove(image="")
-        self.green_right_trophy.grid_remove(image="")
+        self.red_left_trophy.config(image="")
+        self.red_right_trophy.config(image="")
+        self.green_left_trophy.config(image="")
+        self.green_right_trophy.config(image="")
 
     def _show_red_trophies(self):
-        self.red_left_trophy.grid(image=self.trophy_image)
-        self.red_right_trophy.grid(image=self.trophy_image)
+        self.red_left_trophy.config(image=self.trophy_image)
+        self.red_right_trophy.config(image=self.trophy_image)
     def _show_green_trophies(self):
-        self.green_left_trophy.grid(image=self.trophy_image)
-        self.green_right_trophy.grid(image=self.trophy_image)
+        self.green_left_trophy.config(image=self.trophy_image)
+        self.green_right_trophy.config(image=self.trophy_image)
 
     def _create_team_panel(self, team_key, team_name, color, column):
         panel = tk.Frame(self.frame, bg="#0f0f23", bd=2, relief="groove")
