@@ -87,6 +87,7 @@ class PlayActionScreen:
         img = Image.open(os.path.join("assets", "images", "Trophy.png"))
         img = img.resize((25, 25), Image.LANCZOS)
         self.trophy_image = ImageTk.PhotoImage(img)
+        self.empty_image = ImageTk.PhotoImage(Image.new("RGBA", (25, 25), (0, 0, 0, 0)))
 
 
         header = tk.Frame(self.frame, bg="#1a1a2e")
@@ -183,10 +184,10 @@ class PlayActionScreen:
         send_message(202)
 
     def _hide_all_trophies(self):
-        self.red_left_trophy.config(image="")
-        self.red_right_trophy.config(image="")
-        self.green_left_trophy.config(image="")
-        self.green_right_trophy.config(image="")
+        self.red_left_trophy.config(image=self.empty_image())
+        self.red_right_trophy.config(image=self.empty_image())
+        self.green_left_trophy.config(image=self.empty_image())
+        self.green_right_trophy.config(image=self.empty_image())
 
     def _show_red_trophies(self):
         self.red_left_trophy.config(image=self.trophy_image)
