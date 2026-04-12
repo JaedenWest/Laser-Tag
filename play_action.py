@@ -83,7 +83,7 @@ class PlayActionScreen:
         self.frame.grid_rowconfigure(1, weight=1)
         self.frame.grid_rowconfigure(2, weight=1)
 
-        img = Image.open(os.path.join("assets", "images", "Trophy.png"))
+        img = Image.open(os.path.join("assets", "images", "Trophy.png")).convert("RGBA")
         img = img.resize((25, 25), Image.LANCZOS)
         self.trophy_image = ImageTk.PhotoImage(img)
         self.empty_image = ImageTk.PhotoImage(Image.new("RGBA", (25, 25), (0, 0, 0, 0)))
@@ -326,7 +326,7 @@ class PlayActionScreen:
             fg="white",
             padx=30,
             pady=10,
-            command=self.end_callback,
+            command=self._return_to_player_entry,
         ).pack()
 
     def _start_game_timer(self):
@@ -562,6 +562,11 @@ class PlayActionScreen:
         if self.frame:
             self.frame.destroy()
             self.frame = None
+    
+    def _return_to_player_entry(self):
+        self.destroy()
+        if self.end_callback:
+            self.end_callback()
 
 
 if __name__ == "__main__":
