@@ -326,7 +326,7 @@ class PlayActionScreen:
             fg="white",
             padx=30,
             pady=10,
-            command=self._end_game,
+            command=self.end_callback,
         ).pack()
 
     def _start_game_timer(self):
@@ -545,8 +545,6 @@ class PlayActionScreen:
         if self.frame:
             self.frame.destroy()
             self.frame = None
-        if self.end_callback:
-            self.end_callback()
 
     def destroy(self):
         set_message_handler(None)
