@@ -416,6 +416,7 @@ class PlayActionScreen:
                 self._log_event(f"{attacker['codename']} captured GREEN base (+100)")
             else:
                 self._log_event(f"{attacker['codename']} hit GREEN base, but no points awarded")
+            send_message(attacker["equipment"])
             self._refresh_scores()
             return
 
@@ -426,6 +427,7 @@ class PlayActionScreen:
                 self._log_event(f"{attacker['codename']} captured RED base (+100)")
             else:
                 self._log_event(f"{attacker['codename']} hit RED base, but no points awarded")
+            send_message(attacker["equipment"])
             self._refresh_scores()
             return
 
