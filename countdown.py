@@ -7,6 +7,7 @@ Displays a countdown from 30 to 1 using countdown images.
 
 import tkinter as tk
 
+
 class CountdownScreen:
     """Displays a countdown before the game starts."""
     def __init__(self, parent, callback, cancel_callback, short_countdown=False):
@@ -76,6 +77,7 @@ class CountdownScreen:
 
     def _end_countdown(self):
         """Clean up and call the callback when countdown completes."""
+
 
         if self.frame:
             self.parent.unbind("<Escape>")
