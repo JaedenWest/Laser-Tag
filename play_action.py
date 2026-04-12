@@ -542,9 +542,6 @@ class PlayActionScreen:
         send_message(221)
 
         self.parent.unbind("<F5>")
-        if self.frame:
-            self.frame.destroy()
-            self.frame = None
 
     def destroy(self):
         set_message_handler(None)
