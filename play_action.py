@@ -126,13 +126,14 @@ class PlayActionScreen:
         )
         self.red_score_value_label.pack()
 
-        tk.Label(
+        self.game_status_label = tk.Label(
             header,
             text="GAME IN PROGRESS",
             font=("Helvetica", 28, "bold"),
             fg="white",
             bg="#1a1a2e",
-        ).grid(row=0, column=1, padx=20)
+        )
+        self.game_status_label.grid(row=0, column=1, padx=20)
 
         green_frame = tk.Frame(header, bg="#1a1a2e")
         green_frame.grid(row=0, column=2)
@@ -172,7 +173,7 @@ class PlayActionScreen:
         self._create_event_log()
         self._create_footer()
 
-        self.parent.bind("<F5>", lambda e: self._end_game())
+        self.parent.bind("<F5>", lambda e: self._return_to_player_entry())
 
         set_message_handler(self._handle_udp_message)
         self._refresh_scores()
@@ -542,6 +543,7 @@ class PlayActionScreen:
         send_message(221)
 
         self.parent.unbind("<F5>")
+        self.game_status_label.config(text="GAME OVER", fg="#ffcc00")
 
     def destroy(self):
         set_message_handler(None)
