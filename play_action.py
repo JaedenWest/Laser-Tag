@@ -17,13 +17,14 @@ from queue import Queue, Empty
 class PlayActionScreen:
     """Displays the in-game action screen with teams, timer, and event log."""
 
-    def __init__(self, parent, red_players, green_players, end_callback):
+    def __init__(self, parent, red_players, green_players, end_callback, music):
         self.parent = parent
         self.red_players = red_players
         self.green_players = green_players
         self.end_callback = end_callback
         self.current_winner = None
         self.frame = None
+        self.music = music
 
         self.players_by_equipment = {}
         self.red_score_var = tk.StringVar(value="0")
@@ -566,6 +567,7 @@ class PlayActionScreen:
             self.frame = None
     
     def _return_to_player_entry(self):
+        self.music.stop()
         self.destroy()
         if self.end_callback:
             self.end_callback()
@@ -575,6 +577,7 @@ if __name__ == "__main__":
     def on_end_game():
         print("Game ended!")
         root.destroy()
+        music.quit()
 
     root = tk.Tk()
     root.title("Play Action Screen Test")
@@ -590,6 +593,10 @@ if __name__ == "__main__":
         {"id": "4", "codename": "Storm", "equipment": "104"},
     ]
 
-    screen = PlayActionScreen(root, red, green, on_end_game)
+    from audio import AudioController
+    music = AudioController()
+    music.play_random_track(start_time=20)
+
+    screen = PlayActionScreen(root, red, green, on_end_game, music)
     screen.show()
     root.mainloop()

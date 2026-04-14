@@ -10,7 +10,7 @@ import tkinter as tk
 
 class CountdownScreen:
     """Displays a countdown before the game starts."""
-    def __init__(self, parent, callback, cancel_callback, short_countdown=False):
+    def __init__(self, parent, callback, cancel_callback, music, short_countdown=False):
         self.parent = parent
         self.callback = callback
         self.cancel_callback = cancel_callback
@@ -20,6 +20,7 @@ class CountdownScreen:
         self.countdown_duration = 5 if short_countdown else 30
         self.current_number = self.countdown_duration
         self.scheduled_callback = None
+        self.music = music
 
     def show(self):
         """Display the countdown screen and start the countdown."""
@@ -55,6 +56,8 @@ class CountdownScreen:
     def _start_countdown(self):
         """Start the countdown sequence."""
         self.current_number = self.countdown_duration
+        if self.current_number < 20:
+            self.music.play_random_track(start_time=20-self.current_number)
 
         # Start displaying countdown numbers
         self._show_next_number()
@@ -62,6 +65,9 @@ class CountdownScreen:
 
     def _show_next_number(self):
         """Display the next countdown number and schedule the next one."""
+        if self.current_number == 20:
+            self.music.play_random_track()
+
         if self.current_number <= 1:
             self._end_countdown()
             return
@@ -88,6 +94,7 @@ class CountdownScreen:
 
     def _cancel(self):
         """Cancel countdown and return to player entry."""
+        self.music.stop()
         self.callback = self.cancel_callback
         if self.scheduled_callback:
             self.parent.after_cancel(self.scheduled_callback)
@@ -108,10 +115,12 @@ if __name__ == "__main__":
 
     def on_countdown_complete():
         print("Countdown complete!")
+        music.quit()
         root.destroy()
     
     def on_countdown_cancel():
         print("Countdown cancelled.")
+        music.quit()
         root.destroy()
 
     root = tk.Tk()
@@ -119,6 +128,9 @@ if __name__ == "__main__":
     root.geometry("1024x768")
     root.configure(bg="black")
 
-    countdown = CountdownScreen(root, on_countdown_complete, on_countdown_cancel)
+    from audio import AudioController
+    music = AudioController()
+
+    countdown = CountdownScreen(root, on_countdown_complete, on_countdown_cancel, music)
     countdown.show()
     root.mainloop()

@@ -11,6 +11,7 @@ from splash_screen import SplashScreen
 from player_entry import PlayerEntryScreen
 from countdown import CountdownScreen
 from play_action import PlayActionScreen
+from audio import AudioController
 
 
 class PhotonApp:
@@ -22,6 +23,7 @@ class PhotonApp:
         self.root.geometry("1024x768")
         self.root.configure(bg="black")
         self.current_screen = None
+        self.music = AudioController()
 
     def run(self):
         self.show_splash()
@@ -48,20 +50,22 @@ class PhotonApp:
             self.root,
             lambda: self._show_game(red_players, green_players),
             self.show_player_entry,
-            short_countdown,
+            self.music,
+            short_countdown
         )
         self.current_screen.show()
 
 
     def _show_game(self, red_players, green_players):
         self.current_screen = PlayActionScreen(
-            self.root, red_players, green_players, self.show_player_entry
+            self.root, red_players, green_players, self.show_player_entry, self.music
         )
         self.current_screen.show()
 
     def quit(self):
         self.root.quit()
         self.root.destroy()
+        self.music.quit()
 
 
 def main():
