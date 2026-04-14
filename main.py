@@ -46,14 +46,14 @@ class PhotonApp:
     def show_countdown(self, red_players, green_players, short_countdown=False):
         self.current_screen = CountdownScreen(
             self.root,
-            lambda: self._show_game_placeholder(red_players, green_players),
+            lambda: self._show_game(red_players, green_players),
             self.show_player_entry,
             short_countdown,
         )
         self.current_screen.show()
 
 
-    def _show_game_placeholder(self, red_players, green_players):
+    def _show_game(self, red_players, green_players):
         self.current_screen = PlayActionScreen(
             self.root, red_players, green_players, self.show_player_entry
         )
