@@ -586,6 +586,7 @@ class PlayActionScreen:
             self.frame = None
     
     def _return_to_player_entry(self):
+        self._end_game()
         self.music.stop()
         self.destroy()
         if self.end_callback:
