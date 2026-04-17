@@ -45,6 +45,9 @@ class PlayActionScreen:
         self.green_score_title_label = None
         self.green_score_value_label = None
 
+        self.base_image = None
+        self.empty_image = None
+
         self.pending_udp_events = Queue()
         self.poll_job = None
 
@@ -73,6 +76,10 @@ class PlayActionScreen:
                 "has_base": False,
             }
 
+    def add_base(self, equipment_id):
+        player = self.players_by_equipment.get(equipment_id)
+        if player:
+            player["has_base"] = True
 
     def show(self):
         self.frame = tk.Frame(self.parent, bg="#1a1a2e")
@@ -88,6 +95,10 @@ class PlayActionScreen:
         img = img.resize((25, 25), Image.LANCZOS)
         self.trophy_image = ImageTk.PhotoImage(img)
         self.empty_image = ImageTk.PhotoImage(Image.new("RGBA", (25, 25), (0, 0, 0, 0)))
+
+        base_img = Image.open(os.path.join("assets", "images", "baseicon.jpg")).convert("RGBA")
+        base_img = base_img.resize((25, 25), Image.LANCZOS)
+        self.base_image = ImageTk.PhotoImage(base_img)
 
 
         header = tk.Frame(self.frame, bg="#1a1a2e")
@@ -243,6 +254,15 @@ class PlayActionScreen:
             name_var = tk.StringVar(value=player["codename"])
             score_var = tk.StringVar(value=str(player["score"]))
 
+            base_label = tk.Label(
+                row,
+                image=self.empty_image,
+                bg="#0f0f23",
+                width=25,
+                height=25,
+            )
+            base_label.pack(side="left", padx=(0, 4))
+
             tk.Label(
                 row,
                 textvariable=name_var,
@@ -263,6 +283,7 @@ class PlayActionScreen:
                 "equipment": player["equipment"],
                 "name_var": name_var,
                 "score_var": score_var,
+                "base_label": base_label,
             })
 
     def _create_timer_panel(self):
@@ -505,18 +526,16 @@ class PlayActionScreen:
         )
 
         for row, player in zip(self.red_player_rows, red_players):
-            name = player["codename"]
-            if player["has_base"]:
-                name = "[BASE] " + name
-            row["name_var"].set(name)
+            row["name_var"].set(player["codename"])
             row["score_var"].set(str(player["score"]))
+            icon = self.base_image if player["has_base"] else self.empty_image
+            row["base_label"].config(image=icon)
 
         for row, player in zip(self.green_player_rows, green_players):
-            name = player["codename"]
-            if player["has_base"]:
-                name = "[BASE] " + name
-            row["name_var"].set(name)
+            row["name_var"].set(player["codename"])
             row["score_var"].set(str(player["score"]))
+            icon = self.base_image if player["has_base"] else self.empty_image
+            row["base_label"].config(image=icon)
 
     def _log_event(self, text):
         self.event_log.config(state="normal")
