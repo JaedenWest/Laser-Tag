@@ -65,7 +65,7 @@ class CountdownScreen:
 
     def _show_next_number(self):
         """Display the next countdown number and schedule the next one."""
-        if self.current_number == 20:
+        if self.current_number == 18:
             self.music.play_random_track()
 
         if self.current_number <= 1:
