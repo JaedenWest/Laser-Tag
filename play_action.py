@@ -59,6 +59,9 @@ class PlayActionScreen:
                 "team": "red",
                 "score": 0,
                 "has_base": False,
+                #base counter
+                "base_streak": 0,
+                "last_base_hit": None,
             }
 
         for player in self.green_players:
@@ -70,6 +73,9 @@ class PlayActionScreen:
                 "team": "green",
                 "score": 0,
                 "has_base": False,
+                #base counter
+                "base_streak": 0,
+                "last_base_hit": None,
             }
 
 
@@ -389,6 +395,9 @@ class PlayActionScreen:
             pass
 
         self.poll_job = self.parent.after(100, self._poll_udp_queue)
+    def _reset_base_streak(self, player):
+        player["base_streak"] = 0
+        player["last_base_hit"] = None
 
     def _process_udp_message(self, parsed):
         message_type = parsed[0]
@@ -411,21 +420,46 @@ class PlayActionScreen:
 
         if target_value == 43:
             if attacker["team"] == "red":
-                attacker["score"] += 100
-                attacker["has_base"] = True
-                self._log_event(f"{attacker['codename']} captured GREEN base (+100)")
+                if attacker["last_base_hit"] == 43:
+                    attacker["base_streak"] += 1
+                else:
+                    attacker["base_streak"] = 1
+                attacker["last_base_hit"] = 43
+
+                if attacker["base_streak"] >= 3:
+                    attacker["score"] += 100
+                    attacker["has_base"] = True
+                    self._log_event(f"{attacker['codename']} captured GREEN base (+100)")
+
+                    self._reset_base_streak(attacker)
+                else:
+                    self._log_event(f"{attacker['codename']} hit GREEN base ({attacker['base_streak']}/3)")
+                    
             else:
                 self._log_event(f"{attacker['codename']} hit GREEN base, but no points awarded")
+                self._reset_base_streak(attacker)
             self._refresh_scores()
             return
 
         if target_value == 53:
             if attacker["team"] == "green":
-                attacker["score"] += 100
-                attacker["has_base"] = True
-                self._log_event(f"{attacker['codename']} captured RED base (+100)")
+                if attacker["last_base_hit"] == 53:
+                    attacker["base_streak"] += 1
+                else:
+                    attacker["base_streak"] = 1
+                attacker["last_base_hit"] = 53
+                if attacker["base_streak"] >= 3:
+                    attacker["score"] += 100
+                    attacker["has_base"] = True
+                    self._log_event(f"{attacker['codename']} captured RED base (+100)")
+
+                    self._reset_base_streak(attacker)
+                else:
+                    self._log_event(f"{attacker['codename']} hit RED base ({attacker['base_streak']}/3)")
+
             else:
                 self._log_event(f"{attacker['codename']} hit RED base, but no points awarded")
+                self._reset_base_streak(attacker)
             self._refresh_scores()
             return
 
@@ -453,7 +487,8 @@ class PlayActionScreen:
             self._log_event(
                 f"{attacker['codename']} tagged {target['codename']} (+10)"
             )
-
+        self._reset_base_streak(attacker)
+        self._reset_base_streak(target)
         self._refresh_scores()
 
     def _refresh_scores(self):
@@ -502,6 +537,9 @@ class PlayActionScreen:
 
         for row, player in zip(self.red_player_rows, red_players):
             name = player["codename"]
+            #debugging statements for base streak display
+            if player["base_streak"] > 0:
+                name = f"[{player['base_streak']}/3] " + name
             if player["has_base"]:
                 name = "[BASE] " + name
             row["name_var"].set(name)
@@ -509,6 +547,9 @@ class PlayActionScreen:
 
         for row, player in zip(self.green_player_rows, green_players):
             name = player["codename"]
+            #debugging statements for base streak display
+            if player["base_streak"] > 0:
+                name = f"[{player['base_streak']}/3] " + name
             if player["has_base"]:
                 name = "[BASE] " + name
             row["name_var"].set(name)
