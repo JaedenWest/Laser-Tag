@@ -89,7 +89,7 @@ class PlayActionScreen:
         self.frame.grid_rowconfigure(1, weight=1)
         self.frame.grid_rowconfigure(2, weight=1)
 
-        img = Image.open(os.path.join("assets", "images", "Trophy.png"))
+        img = Image.open(os.path.join("assets", "images", "Trophy.png")).convert("RGBA")
         img = img.resize((25, 25), Image.LANCZOS)
         self.trophy_image = ImageTk.PhotoImage(img)
         self.empty_image = ImageTk.PhotoImage(Image.new("RGBA", (25, 25), (0, 0, 0, 0)))
@@ -132,13 +132,14 @@ class PlayActionScreen:
         )
         self.red_score_value_label.pack()
 
-        tk.Label(
+        self.game_status_label = tk.Label(
             header,
             text="GAME IN PROGRESS",
             font=("Helvetica", 28, "bold"),
             fg="white",
             bg="#1a1a2e",
-        ).grid(row=0, column=1, padx=20)
+        )
+        self.game_status_label.grid(row=0, column=1, padx=20)
 
         green_frame = tk.Frame(header, bg="#1a1a2e")
         green_frame.grid(row=0, column=2)
@@ -178,7 +179,7 @@ class PlayActionScreen:
         self._create_event_log()
         self._create_footer()
 
-        self.parent.bind("<F5>", lambda e: self._end_game())
+        self.parent.bind("<F5>", lambda e: self._return_to_player_entry())
 
         set_message_handler(self._handle_udp_message)
         self._refresh_scores()
@@ -332,7 +333,7 @@ class PlayActionScreen:
             fg="white",
             padx=30,
             pady=10,
-            command=self._end_game,
+            command=self._return_to_player_entry,
         ).pack()
 
     def _start_game_timer(self):
@@ -438,6 +439,8 @@ class PlayActionScreen:
             else:
                 self._log_event(f"{attacker['codename']} hit GREEN base, but no points awarded")
                 self._reset_base_streak(attacker)
+            send_message(attacker["equipment"])
+
             self._refresh_scores()
             return
 
@@ -460,6 +463,7 @@ class PlayActionScreen:
             else:
                 self._log_event(f"{attacker['codename']} hit RED base, but no points awarded")
                 self._reset_base_streak(attacker)
+            send_message(attacker["equipment"])
             self._refresh_scores()
             return
 
@@ -581,11 +585,7 @@ class PlayActionScreen:
         send_message(221)
 
         self.parent.unbind("<F5>")
-        if self.frame:
-            self.frame.destroy()
-            self.frame = None
-        if self.end_callback:
-            self.end_callback()
+        self.game_status_label.config(text="GAME OVER", fg="#ffcc00")
 
     def destroy(self):
         set_message_handler(None)
@@ -606,6 +606,11 @@ class PlayActionScreen:
         if self.frame:
             self.frame.destroy()
             self.frame = None
+    
+    def _return_to_player_entry(self):
+        self.destroy()
+        if self.end_callback:
+            self.end_callback()
 
 
 if __name__ == "__main__":
